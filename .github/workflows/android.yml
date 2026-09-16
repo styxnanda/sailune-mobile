@@ -1,0 +1,87 @@
+name: Android
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: sailune-mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: sailune-mobile
+      - uses: actions/checkout@v4
+        with:
+          repository: styxnanda/sailune-go
+          ref: de1eb190f2cc6855855fa3aef6ee881120077a36
+          path: sailune-cli
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: sailune-mobile/core/go.sum
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          cache: true
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test integration_test
+      - run: flutter analyze
+      - run: flutter test
+      - run: go -C core test -race ./...
+      - run: go -C core vet ./...
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sailune-mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: sailune-mobile
+      - uses: actions/checkout@v4
+        with:
+          repository: styxnanda/sailune-go
+          ref: de1eb190f2cc6855855fa3aef6ee881120077a36
+          path: sailune-cli
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.3'
+          cache-dependency-path: sailune-mobile/core/go.sum
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          cache: true
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358'
+      - run: |
+          go install golang.org/x/mobile/cmd/gomobile@v0.0.0-20260908204917-8b95e45f8d3e
+          go install golang.org/x/mobile/cmd/gobind@v0.0.0-20260908204917-8b95e45f8d3e
+          scripts/build-core.sh
+      - run: flutter pub get
+      - run: flutter build apk --debug --target-platform android-arm64,android-x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sailune-android-debug
+          path: sailune-mobile/build/app/outputs/flutter-apk/app-debug.apk
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          working-directory: sailune-mobile
+          script: flutter test integration_test/library_test.dart -d emulator-5554
