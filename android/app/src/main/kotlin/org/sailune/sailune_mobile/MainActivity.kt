@@ -28,7 +28,12 @@ class MainActivity : FlutterActivity() {
                         val id = call.argument<String>("id")
                         val payload = call.argument<String>("payload")
                         if (id == null || payload == null) result.error("request", "Missing library request", null)
-                        else background(result) { client.call(id, payload) }
+                        else try {
+                            // Register on the platform thread before scheduling, so a
+                            // quick Cancel cannot race ahead of Go registration.
+                            client.prepare(id)
+                            background(result) { client.call(id, payload) }
+                        } catch (e: Exception) { result.error("library", e.message, null) }
                     }
                     "cancel" -> { client.cancel(call.arguments as? String ?: ""); result.success(null) }
                     "openLink" -> {

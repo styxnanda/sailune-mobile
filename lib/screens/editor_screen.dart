@@ -2,11 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../data/library.dart';
 import '../models/story.dart';
+import '../widgets/scrape_dialog.dart';
 
 class EditorScreen extends StatefulWidget {
   final Library library;
   final Story? story;
-  const EditorScreen({super.key, required this.library, this.story});
+  final bool asSheet;
+  const EditorScreen({
+    super.key,
+    required this.library,
+    this.story,
+    this.asSheet = false,
+  });
   @override
   State<EditorScreen> createState() => _EditorScreenState();
 }
@@ -66,14 +73,19 @@ class _EditorScreenState extends State<EditorScreen> {
     };
     try {
       if (widget.story == null) {
-        await widget.library.call({
+        final request = <String, dynamic>{
           'op': 'add',
           'fetch': _fetch,
           'bookmark': {
             'url': _url.text.trim(),
             for (final e in fields.entries) e.key.toLowerCase(): e.value,
           },
-        });
+        };
+        if (_fetch) {
+          await scrapeWithDialog(context, widget.library, request);
+        } else {
+          await widget.library.call(request);
+        }
       } else {
         // Only send changed fields; progress and timestamps survive unrelated edits.
         final original = widget.story!;
@@ -106,6 +118,13 @@ class _EditorScreenState extends State<EditorScreen> {
     canPop: !_busy,
     child: Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          tooltip: widget.asSheet ? 'Close' : 'Back',
+          onPressed: _busy ? null : () => Navigator.maybePop(context),
+          icon: Icon(
+            widget.asSheet ? Icons.close_rounded : Icons.arrow_back_rounded,
+          ),
+        ),
         title: Text(widget.story == null ? 'Add a story' : 'Edit bookmark'),
       ),
       body: SafeArea(
@@ -116,6 +135,8 @@ class _EditorScreenState extends State<EditorScreen> {
               key: _form,
               child: ListView(
                 padding: const EdgeInsets.all(24),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [
                   Text(
                     widget.story == null
@@ -260,7 +281,7 @@ class _EditorScreenState extends State<EditorScreen> {
                   const SizedBox(height: 28),
                   FilledButton(
                     onPressed: _busy ? null : _save,
-                    child: _busy
+                    child: _busy && !(widget.story == null && _fetch)
                         ? const SizedBox(
                             width: 22,
                             height: 22,

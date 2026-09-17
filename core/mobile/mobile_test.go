@@ -158,3 +158,81 @@ func TestMissingChapterIndexHasMobileRecovery(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestCancelBeforeWorkerStartsAndMalformedCleanup(t *testing.T) {
+	c := newTestClient(t)
+	if err := c.Prepare("queued"); err != nil {
+		t.Fatal(err)
+	}
+	c.Cancel("queued")
+	_, err := c.Call("queued", `{"op":"add","bookmark":{"url":"https://fanfiction.net/s/123/1"}}`)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+	rows, err := c.library.List(sailune.Filter{})
+	if err != nil || len(rows) != 0 {
+		t.Fatal("cancelled request saved a bookmark", err)
+	}
+	if err := c.Prepare("bad"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Call("bad", `not json`); err == nil {
+		t.Fatal("accepted invalid payload")
+	}
+	if len(c.requests) != 0 {
+		t.Fatal("request registrations leaked")
+	}
+}
+
+type deadlineProbe struct{ t *testing.T }
+
+func (f deadlineProbe) Fetch(ctx context.Context, _ string) (sailune.Metadata, error) {
+	deadline, ok := ctx.Deadline()
+	if !ok || time.Until(deadline) > 15*time.Second || time.Until(deadline) < 14*time.Second {
+		f.t.Error("expected a 15-second deadline")
+	}
+	return sailune.Metadata{}, context.DeadlineExceeded
+}
+func TestScrapingUsesFifteenSecondDeadline(t *testing.T) {
+	c := newTestClient(t)
+	c.fetcher = deadlineProbe{t}
+	_, err := c.Call("timeout", `{"op":"add","fetch":true,"bookmark":{"url":"https://fanfiction.net/s/123/1"}}`)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatal(err)
+	}
+	rows, _ := c.library.List(sailune.Filter{})
+	if len(rows) != 0 {
+		t.Fatal("timeout saved a bookmark")
+	}
+}
+
+type ignoringCancellationFetcher struct {
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (f ignoringCancellationFetcher) Fetch(ctx context.Context, _ string) (sailune.Metadata, error) {
+	close(f.entered)
+	<-f.release
+	return sailune.Metadata{Title: "Too late"}, nil
+}
+func TestCancelledFetchCannotReturnLateMetadataAndSave(t *testing.T) {
+	c := newTestClient(t)
+	f := ignoringCancellationFetcher{make(chan struct{}), make(chan struct{})}
+	c.fetcher = f
+	done := make(chan error, 1)
+	go func() {
+		_, err := c.Call("late", `{"op":"add","fetch":true,"bookmark":{"url":"https://fanfiction.net/s/123/1"}}`)
+		done <- err
+	}()
+	<-f.entered
+	c.Cancel("late")
+	close(f.release)
+	if err := <-done; !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+	rows, _ := c.library.List(sailune.Filter{})
+	if len(rows) != 0 {
+		t.Fatal("late result saved a cancelled bookmark")
+	}
+}

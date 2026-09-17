@@ -6,7 +6,7 @@ The initial stack discussion in Sailune-Go offered native SwiftUI/Compose and Fl
 
 `core/mobile.Client` exposes a synchronous JSON request/response method and network cancellation, using only gomobile-compatible types. The Android executor moves calls off the main thread. Native errors become `PlatformException`; Dart retains editable values and presents a retry path.
 
-Request operations: `list`, `get`, `add`, `update`, `refresh`, `delete`, `open`, `resume`, `export`, and `import`. Each call has a unique active request ID. Network requests expire after 35 seconds (the underlying scraper also has its own 30-second limit). Cancellation does not undo committed writes.
+Request operations: `list`, `get`, `add`, `update`, `refresh`, `delete`, `open`, `resume`, `export`, and `import`. Each call has a unique active request ID. The Android handler registers requests with `Prepare` before putting them on a worker queue. Cancellation therefore also covers requests that have not started running. The context deadline is 15 seconds, including worker queue time, and overrides the scraper’s longer default. Cancellation does not undo committed writes: if a save already succeeded, its successful result is shown. A cancelled fetch returning late metadata is rejected before adding a bookmark.
 
 List filters and edit patches use the Go public field names. Bookmark payloads and effective metadata use the existing JSON schema. `effective` is added for presentation so metadata overrides imported from desktop are honored without duplicating merge rules in Dart. Source metadata and overrides remain intact even though the first mobile editor exposes only personal fields.
 
@@ -17,7 +17,7 @@ SQLite is authoritative. Dart does not cache bookmark state across launches. The
 - Light: canvas `#f5f5f5`, surface `#ffffff`, ink `#202020`, border `#dedede`.
 - Dark: canvas `#181818`, surface `#232323`, ink `#ededed`, border `#3b3b3b`.
 - 22px cards, 16px form controls, 24px page gutters, 48dp minimum icon targets.
-- One reading-room destination. Adding, editing, settings, and story details use standard Flutter routes; filters use a sheet.
+- One reading-room destination. The full-width Add story button first expands to cover the bottom of the screen, then the editor sheet rises to 86% of the screen height. Editing, settings, and story details use standard Flutter routes; filters use a sheet. Reduced motion skips the sheet transition and freezes the scraping spinner.
 - Native back navigation, pull-to-refresh, keyboard-aware forms, large text, and browser reading.
 - No live SQLite cloud synchronization, no inferred progress on opening a story.
 

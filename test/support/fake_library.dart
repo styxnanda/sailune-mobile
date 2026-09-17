@@ -28,7 +28,10 @@ class FakeLibrary implements Library {
   FakeLibrary({List<Map<String, dynamic>>? rows})
     : rows = rows ?? [sample(), sample(id: 2)];
   @override
-  Future<dynamic> call(Map<String, dynamic> request) async {
+  Future<dynamic> call(
+    Map<String, dynamic> request, {
+    String? requestId,
+  }) async {
     requests.add(request);
     switch (request['op']) {
       case 'list':
@@ -78,6 +81,9 @@ class FakeLibrary implements Library {
         throw UnsupportedError('${request['op']}');
     }
   }
+
+  @override
+  Future<void> cancel(String requestId) async {}
 
   @override
   Future<void> openLink(String url) async {

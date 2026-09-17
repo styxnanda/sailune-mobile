@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../data/library.dart';
 import '../models/story.dart';
+import '../widgets/scrape_dialog.dart';
 import 'editor_screen.dart';
 
 class StoryScreen extends StatefulWidget {
@@ -38,7 +39,9 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   Future<void> _update(Map<String, dynamic> request) async {
-    final result = await widget.library.call(request);
+    final result = request['op'] == 'refresh'
+        ? await scrapeWithDialog(context, widget.library, request)
+        : await widget.library.call(request);
     if (mounted) {
       setState(() => _story = Story(Map<String, dynamic>.from(result as Map)));
     }

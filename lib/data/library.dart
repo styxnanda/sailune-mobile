@@ -5,7 +5,8 @@ import 'package:flutter/services.dart';
 import '../models/story.dart';
 
 abstract class Library {
-  Future<dynamic> call(Map<String, dynamic> request);
+  Future<dynamic> call(Map<String, dynamic> request, {String? requestId});
+  Future<void> cancel(String requestId);
   Future<void> openLink(String url);
   Future<String?> pickBackup();
   Future<bool> saveBackup(String snapshot);
@@ -17,14 +18,23 @@ class AndroidLibrary implements Library {
   static const channel = MethodChannel('org.sailune.mobile/library');
   int _sequence = 0;
   @override
-  Future<dynamic> call(Map<String, dynamic> request) async {
+  Future<dynamic> call(
+    Map<String, dynamic> request, {
+    String? requestId,
+  }) async {
     final response = await channel.invokeMethod<String>('call', {
-      'id': '${DateTime.now().microsecondsSinceEpoch}-${_sequence++}',
+      'id':
+          requestId ??
+          '${DateTime.now().microsecondsSinceEpoch}-${_sequence++}',
       'payload': jsonEncode(request),
     });
     if (response == null) throw StateError('The library returned no response.');
     return jsonDecode(response);
   }
+
+  @override
+  Future<void> cancel(String requestId) =>
+      channel.invokeMethod('cancel', requestId);
 
   @override
   Future<void> openLink(String url) => channel.invokeMethod('openLink', url);

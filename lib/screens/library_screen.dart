@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../data/library.dart';
 import '../models/story.dart';
 import '../widgets/story_card.dart';
-import 'editor_screen.dart';
+import 'add_story_sheet.dart';
 import 'story_screen.dart';
 import 'settings_screen.dart';
 
@@ -25,6 +25,8 @@ class LibraryScreen extends StatefulWidget {
 
 class _LibraryScreenState extends State<LibraryScreen>
     with WidgetsBindingObserver {
+  final _addButtonKey = GlobalKey();
+  bool _adding = false;
   final _search = TextEditingController();
   final _scroll = ScrollController();
   final _saving = <int>{};
@@ -121,9 +123,13 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Future<void> _edit() async {
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => EditorScreen(library: widget.library)),
-    );
+    if (_adding) return;
+    _adding = true;
+    final box = _addButtonKey.currentContext!.findRenderObject() as RenderBox;
+    final origin = box.localToGlobal(Offset.zero) & box.size;
+    final saved = await showAddStorySheet(context, widget.library, origin);
+    _adding = false;
+    if (!mounted) return;
     if (saved == true) {
       await _load();
       _message('Story added to your library');
@@ -278,13 +284,20 @@ class _LibraryScreenState extends State<LibraryScreen>
           const SizedBox(width: 10),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _edit,
-        backgroundColor: colors.primary,
-        foregroundColor: colors.onPrimary,
-        elevation: 2,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add story'),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+          child: FilledButton.icon(
+            key: _addButtonKey,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(double.infinity, 56),
+            ),
+            onPressed: _edit,
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Add story'),
+          ),
+        ),
       ),
       body: SafeArea(
         top: false,
@@ -448,14 +461,6 @@ class _LibraryScreenState extends State<LibraryScreen>
                               ),
                             ),
                             const SizedBox(height: 24),
-                            if (_search.text.isEmpty &&
-                                _shelf.isEmpty &&
-                                !refined)
-                              OutlinedButton.icon(
-                                onPressed: _edit,
-                                icon: const Icon(Icons.add_rounded),
-                                label: const Text('Add your first story'),
-                              ),
                           ],
                         ),
                       ),
@@ -493,7 +498,7 @@ class _LibraryScreenState extends State<LibraryScreen>
                         ),
                       ),
                     ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 110)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 24)),
                 ],
               ),
             ),

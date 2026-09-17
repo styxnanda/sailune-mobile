@@ -21,7 +21,7 @@ import (
 type Client struct {
 	library  sailune.Library
 	mu       sync.Mutex
-	requests map[string]context.CancelFunc
+	requests map[string]*activeRequest
 	fetcher  sailune.MetadataFetcher
 }
 
@@ -29,7 +29,7 @@ func NewClient(path string) (*Client, error) {
 	if !filepath.IsAbs(path) {
 		return nil, errors.New("library path must be absolute")
 	}
-	return &Client{library: sailune.Library{Store: sailune.Store{Path: path}}, requests: map[string]context.CancelFunc{}, fetcher: &sailune.Scraper{}}, nil
+	return &Client{library: sailune.Library{Store: sailune.Store{Path: path}}, requests: map[string]*activeRequest{}, fetcher: &sailune.Scraper{}}, nil
 }
 
 type request struct {
@@ -56,6 +56,23 @@ func (c *Client) Call(requestID, payload string) (string, error) {
 	if requestID == "" {
 		return "", errors.New("request ID is required")
 	}
+	c.mu.Lock()
+	active := c.requests[requestID]
+	if active == nil {
+		active = newRequest()
+		c.requests[requestID] = active
+	}
+	if active.started {
+		c.mu.Unlock()
+		return "", errors.New("request ID already active")
+	}
+	active.started = true
+	c.mu.Unlock()
+	ctx := active.ctx
+	defer func() { active.cancel(); c.mu.Lock(); delete(c.requests, requestID); c.mu.Unlock() }()
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	if len(payload) > 32<<20 {
 		return "", errors.New("mobile request exceeds 32 MiB")
 	}
@@ -68,16 +85,6 @@ func (c *Client) Call(requestID, payload string) (string, error) {
 	if err := d.Decode(new(any)); err != io.EOF {
 		return "", errors.New("unexpected trailing JSON")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 35*time.Second)
-	c.mu.Lock()
-	if _, ok := c.requests[requestID]; ok {
-		c.mu.Unlock()
-		cancel()
-		return "", errors.New("request ID already active")
-	}
-	c.requests[requestID] = cancel
-	c.mu.Unlock()
-	defer func() { cancel(); c.mu.Lock(); delete(c.requests, requestID); c.mu.Unlock() }()
 	var value any
 	var err error
 	switch r.Op {
@@ -99,7 +106,7 @@ func (c *Client) Call(requestID, payload string) (string, error) {
 	case "add":
 		var b sailune.Bookmark
 		if r.Fetch {
-			b, err = c.library.AddScraped(ctx, r.Bookmark, c.fetcher)
+			b, err = c.library.AddScraped(ctx, r.Bookmark, deadlineFetcher{c.fetcher})
 		} else {
 			b, err = c.library.Add(r.Bookmark)
 		}
@@ -146,9 +153,50 @@ func (c *Client) Call(requestID, payload string) (string, error) {
 
 func (c *Client) Cancel(requestID string) {
 	c.mu.Lock()
-	cancel := c.requests[requestID]
+	active := c.requests[requestID]
 	c.mu.Unlock()
-	if cancel != nil {
-		cancel()
+	if active != nil {
+		active.cancel()
 	}
+}
+
+const scrapeTimeout = 15 * time.Second
+
+type activeRequest struct {
+	ctx     context.Context
+	cancel  context.CancelFunc
+	started bool
+}
+
+func newRequest() *activeRequest {
+	ctx, cancel := context.WithTimeout(context.Background(), scrapeTimeout)
+	return &activeRequest{ctx: ctx, cancel: cancel}
+}
+
+// Prepare registers cancellation and the deadline before native worker queuing.
+// Every successful Prepare must be followed by Call, even after cancellation,
+// so that Call can release the request state.
+func (c *Client) Prepare(requestID string) error {
+	if requestID == "" {
+		return errors.New("request ID is required")
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if _, exists := c.requests[requestID]; exists {
+		return errors.New("request ID already active")
+	}
+	c.requests[requestID] = newRequest()
+	return nil
+}
+
+// A fetcher returning after cancellation must not allow AddScraped to save it.
+// If a local commit has already won the race, Call returns the saved result.
+type deadlineFetcher struct{ delegate sailune.MetadataFetcher }
+
+func (f deadlineFetcher) Fetch(ctx context.Context, url string) (sailune.Metadata, error) {
+	metadata, err := f.delegate.Fetch(ctx, url)
+	if ctx.Err() != nil {
+		return sailune.Metadata{}, ctx.Err()
+	}
+	return metadata, err
 }

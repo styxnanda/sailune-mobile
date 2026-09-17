@@ -30,44 +30,24 @@ class StoryCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 22),
-                    if (story.rating > 0) ...[
-                      const Icon(Icons.star_rounded, size: 15),
-                      const SizedBox(width: 3),
-                      Text(
-                        '${story.rating}',
-                        semanticsLabel: '${story.rating} out of 5 stars',
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: _StatusRibbon(status: story.status),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               Semantics(
-                label: '${story.site} story',
+                label:
+                    '${story.site} story, ${shelves[story.status] ?? story.status}',
                 child: InkWell(
                   onTap: onOpen,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 0, 22, 8),
+                    padding: const EdgeInsets.fromLTRB(22, 20, 22, 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 16),
-                        Text(
-                          story.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleLarge,
+                        Padding(
+                          padding: const EdgeInsets.only(right: 18),
+                          child: Text(
+                            story.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
                         ),
                         const SizedBox(height: 5),
                         Text(
@@ -94,7 +74,17 @@ class StoryCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            if (story.rating > 0) ...[
+                              const SizedBox(width: 8),
+                              const Icon(Icons.star_rounded, size: 14),
+                              const SizedBox(width: 3),
+                              Text(
+                                '${story.rating}',
+                                semanticsLabel:
+                                    '${story.rating} out of 5 stars',
+                              ),
+                            ],
+                            const SizedBox(width: 12),
                             const Icon(Icons.arrow_forward_rounded, size: 18),
                           ],
                         ),
@@ -147,15 +137,22 @@ class StoryCard extends StatelessWidget {
                 ),
             ],
           ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: ExcludeSemantics(child: _StatusFold(status: story.status)),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _StatusRibbon extends StatelessWidget {
+class _StatusFold extends StatelessWidget {
   final String status;
-  const _StatusRibbon({required this.status});
+  const _StatusFold({required this.status});
 
   @override
   Widget build(BuildContext context) {
@@ -167,40 +164,41 @@ class _StatusRibbon extends StatelessWidget {
       'dropped' => const Color(0xff8c535b),
       _ => const Color(0xff626873),
     };
-    return ClipPath(
-      clipper: const _BookmarkClipper(),
-      child: ColoredBox(
-        color: color,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(23, 6, 20, 6),
-          child: Text(
-            shelves[status] ?? status,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              letterSpacing: .2,
-            ),
-          ),
-        ),
-      ),
-    );
+    return CustomPaint(size: const Size(34, 34), painter: _FoldPainter(color));
   }
 }
 
-// A horizontal bookmark: the notched tail faces the card's center.
-class _BookmarkClipper extends CustomClipper<Path> {
-  const _BookmarkClipper();
+class _FoldPainter extends CustomPainter {
+  final Color color;
+  const _FoldPainter(this.color);
   @override
-  Path getClip(Size size) => Path()
-    ..moveTo(0, 0)
-    ..lineTo(size.width, 0)
-    ..lineTo(size.width, size.height)
-    ..lineTo(0, size.height)
-    ..lineTo(10, size.height / 2)
-    ..close();
+  void paint(Canvas canvas, Size size) {
+    final triangle = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..close();
+    canvas.drawShadow(triangle, Colors.black.withValues(alpha: .2), 2, false);
+    canvas.drawPath(
+      triangle,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.bottomLeft,
+          end: Alignment.topRight,
+          colors: [color, Color.lerp(color, Colors.white, .28)!],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawLine(
+      Offset.zero,
+      Offset(size.width, size.height),
+      Paint()
+        ..color = Colors.white.withValues(alpha: .22)
+        ..strokeWidth = 1,
+    );
+  }
+
   @override
-  bool shouldReclip(_BookmarkClipper oldClipper) => false;
+  bool shouldRepaint(_FoldPainter oldDelegate) => oldDelegate.color != color;
 }
 
 class _SiteWatermark extends StatelessWidget {
@@ -209,11 +207,11 @@ class _SiteWatermark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    // Silver on white, pearl on charcoal. Only the logo silhouette is shaded;
+    // Low-opacity black on white, pearl on charcoal. Only the logo silhouette is shaded;
     // no plate, badge, or visible website label competes with the story title.
     final tones = dark
         ? const [Color(0x0ae1e6eb), Color(0x1affffff), Color(0x0ebbc4cd)]
-        : const [Color(0x2496a0ab), Color(0x14778390), Color(0x2cb5bdc5)];
+        : const [Color(0x16000000), Color(0x0d000000), Color(0x1c000000)];
     return IgnorePointer(
       child: ExcludeSemantics(
         child: ShaderMask(

@@ -2,7 +2,7 @@
 
 A quiet reading room for your fanfiction bookmarks, built with **Flutter + Dart** and the **embedded Sailune-Go core**. Android is the focus of this repository; iOS will be a separate project.
 
-The interface follows Sailune Desktop: monochrome surfaces, rounded story cards, generous touch targets, chapter controls, and light/dark appearance. The original Sailune icon is shared across clients. Cards use horizontal status ribbons (Completed green, Reading blue, To read lavender, On hold amber, Dropped rose) and faint silver/white site watermarks clipped at the lower-right corner.
+The interface follows Sailune Desktop: monochrome surfaces, rounded story cards, generous touch targets, chapter controls, and light/dark appearance. The original Sailune icon is shared across clients. Cards use small, color-only folded corners (Completed green, Reading blue, To read lavender, On hold amber, Dropped rose). Site watermarks use low-opacity black in light mode and pearl in dark mode, clipped at the lower-right corner.
 
 <p>
 <img src="test/goldens/library_light.png" width="280" alt="Sailune reading room in light appearance" />
@@ -13,7 +13,8 @@ Screenshots contain synthetic test stories, not a preloaded collection.
 
 ## Features
 
-- Add AO3 and FanFiction.net stories with public metadata, or save offline.
+- Add AO3 and FanFiction.net stories with public metadata, or save offline. The full-width add button expands into a rising form sheet.
+- Scraping shows a centered animated dialog with five fading waiting messages, Cancel, and a 15-second network deadline. Cancelled or failed fetches retain the form.
 - Search, shelves, website filtering, unread-chapter filtering, and sorting.
 - Bounded SQL pages of 40 stories and lazy scrolling.
 - Edit titles, authors, progress, personal tags, notes, and ratings.

@@ -29,3 +29,9 @@ The first emulator run found Android's denial of hard-link database publication.
 No physical Android phone, production signing, live authenticated website access, or Play Store submission was tested. Debug APK size and debug frame timing are not release-performance measurements.
 
 The final app APK was installed and launched separately from the test harness on the emulator. Its empty-library screen was visually inspected and started without an app error.
+
+## Folded corners and scraping flow update
+
+The revised interface passed 15 Flutter tests and static analysis. Tests cover the full-width Add story action, staged sheet transition, keyboard insets, offline saving, retention of form values after cancellation, all five fading messages, the 15-second timeout, network-error dismissal, and the save-versus-cancel race. Updated light/dark cards, the expanded button, the raised form, and the centered scraping dialog were rendered and visually reviewed.
+
+The mobile Go facade passed race tests and vet, including cancellation before worker startup, request cleanup, the 15-second context deadline, and rejection of metadata arriving after cancellation. Android's real bridge/SQLite integration test passed after rebuilding the native AAR with `Prepare` registration. The final normal application APK was rebuilt separately from the integration-test harness.

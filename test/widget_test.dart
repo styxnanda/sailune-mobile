@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,7 +26,7 @@ void main() {
     await tester.pumpWidget(SailuneApp(library: FakeLibrary(rows: [])));
     await tester.pumpAndSettle();
     expect(find.text('A home for your stories'), findsOneWidget);
-    await tester.tap(find.text('Add your first story'));
+    await tester.tap(find.text('Add story'));
     await tester.pumpAndSettle();
     expect(find.text('Add a story'), findsOneWidget);
   });
@@ -104,6 +106,127 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('The quiet between the stars'), findsOneWidget);
   });
+  testWidgets('add sheet rises below the top and saves offline', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final library = FakeLibrary(rows: []);
+    await tester.pumpWidget(SailuneApp(library: library));
+    await tester.pumpAndSettle();
+    final button = find.widgetWithText(FilledButton, 'Add story');
+    expect(tester.getSize(button).width, 342);
+    await tester.tap(button);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    await expectLater(
+      find.byType(SailuneApp),
+      matchesGoldenFile('goldens/add_story_transition.png'),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getTopLeft(find.byType(EditorScreen)).dy, greaterThan(80));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getTopLeft(find.byType(EditorScreen)).dy,
+      greaterThanOrEqualTo(0),
+    );
+    tester.view.resetViewInsets();
+    await tester.pumpAndSettle();
+    await expectLater(
+      find.byType(SailuneApp),
+      matchesGoldenFile('goldens/add_story_sheet.png'),
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Story URL'),
+      'https://fanfiction.net/s/99/1',
+    );
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Title'),
+      'New offline story',
+    );
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Save to library'),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(EditorScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save to library'));
+    await tester.pumpAndSettle();
+    expect(find.byType(EditorScreen), findsNothing);
+    expect(find.text('New offline story'), findsOneWidget);
+    expect(library.rows.single['title'], 'New offline story');
+  });
+
+  testWidgets('cancelled scraping retains the add sheet and entered details', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final library = _PendingAddLibrary();
+    await tester.pumpWidget(SailuneApp(library: library));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add story'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Story URL'),
+      'https://fanfiction.net/s/99/1',
+    );
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Save to library'),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(EditorScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save to library'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(Dialog), findsOneWidget);
+    await expectLater(
+      find.byType(SailuneApp),
+      matchesGoldenFile('goldens/scraping_dialog.png'),
+    );
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.byType(EditorScreen), findsOneWidget);
+    expect(library.rows, isEmpty);
+    await tester.scrollUntilVisible(
+      find.text('Story URL'),
+      -300,
+      scrollable: find
+          .descendant(
+            of: find.byType(EditorScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('https://fanfiction.net/s/99/1'), findsOneWidget);
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+  });
+
   for (final dark in [false, true]) {
     testWidgets('reading room golden ${dark ? 'dark' : 'light'}', (
       tester,
@@ -152,4 +275,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
+}
+
+class _PendingAddLibrary extends FakeLibrary {
+  final pending = Completer<dynamic>();
+  _PendingAddLibrary() : super(rows: []);
+  @override
+  Future<dynamic> call(Map<String, dynamic> request, {String? requestId}) {
+    if (request['op'] == 'add') return pending.future;
+    return super.call(request, requestId: requestId);
+  }
+
+  @override
+  Future<void> cancel(String requestId) async {
+    pending.completeError(
+      PlatformException(code: 'library', message: 'context canceled'),
+    );
+  }
 }
