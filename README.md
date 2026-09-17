@@ -2,7 +2,7 @@
 
 A quiet reading room for your fanfiction bookmarks, built with **Flutter + Dart** and the **embedded Sailune-Go core**. Android is the focus of this repository; iOS will be a separate project.
 
-The interface follows Sailune Desktop: monochrome surfaces, rounded story cards, generous touch targets, chapter controls, and light/dark appearance. The original Sailune icon is shared across clients.
+The interface follows Sailune Desktop: monochrome surfaces, rounded story cards, generous touch targets, chapter controls, and light/dark appearance. The original Sailune icon is shared across clients. Cards use horizontal status ribbons (Completed green, Reading blue, To read lavender, On hold amber, Dropped rose) and faint silver/white site watermarks clipped at the lower-right corner.
 
 <p>
 <img src="test/goldens/library_light.png" width="280" alt="Sailune reading room in light appearance" />

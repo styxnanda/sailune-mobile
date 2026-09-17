@@ -112,7 +112,16 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      final library = FakeLibrary()..theme = dark ? 'dark' : 'light';
+      final library = FakeLibrary(
+        rows: [
+          {
+            ...sample(),
+            'site': 'ao3',
+            'url': 'https://archiveofourown.org/works/1',
+          },
+          {...sample(id: 2), 'status': 'completed', 'chapter': 24},
+        ],
+      )..theme = dark ? 'dark' : 'light';
       await tester.pumpWidget(
         RepaintBoundary(child: SailuneApp(library: library)),
       );

@@ -7,6 +7,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_svg: ^2.3.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -17,6 +18,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/sailune.png
+    - assets/sites/ao3.svg
+    - assets/sites/ffn.svg
   fonts:
     - family: Sailune
       fonts:
