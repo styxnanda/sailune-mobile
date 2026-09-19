@@ -38,7 +38,7 @@ Projects/
   sailune-mobile/    # this repository
 ```
 
-The `core/go.mod` replacement points at `../../sailune-cli`. CI pins core commit `de1eb190f2cc6855855fa3aef6ee881120077a36`. Use that revision for reproducible builds. Local core changes are picked up deliberately when you rebuild the bindings.
+The `core/go.mod` replacement points at `../../sailune-cli`. CI pins core commit `27cfc124fb9f5757e76c8704b9c94213f3f00a67`. Use that revision for reproducible builds. Local core changes are picked up deliberately when you rebuild the bindings.
 
 ```sh
 # Set JAVA_HOME and ANDROID_HOME to your installed JDK and SDK.
@@ -93,3 +93,12 @@ Mobile login, cookie import, authenticated scraping, full-story downloads, backg
 - [Flutter widget testing](https://docs.flutter.dev/cookbook/testing/widget/introduction)
 
 Licensed under [GPL-3.0](LICENSE). Bundled Roboto uses the license in `assets/fonts/Roboto_LICENSE.txt`; Flutter and Go dependencies retain their respective licenses.
+
+### Source recovery
+
+The pinned shared core retries transient network failures and HTTP 525 with
+bounded exponential backoff, up to four attempts. Android keeps its 15-second total deadline and cancellation button.
+Login gates and browser challenges remain explicit failures; failed refreshes
+preserve saved metadata. See the [measured reliability report](https://github.com/styxnanda/sailune-go/blob/27cfc124fb9f5757e76c8704b9c94213f3f00a67/docs/scraping-reliability.md).
+The live sample improved AO3 recovery but did not reach 90% across both sites
+because FFN continued to require browser challenges.
