@@ -11,6 +11,17 @@ void main() {
     tester,
   ) async {
     final library = AndroidLibrary();
+    expect((await library.websiteSessions()).keys, containsAll(['ao3', 'ffn']));
+    await expectLater(
+      library.connectWebsite('ao3', consent: false),
+      throwsException,
+    );
+    await expectLater(
+      library.clearWebsiteSessions(consent: false),
+      throwsException,
+    );
+    await library.completeOnboarding();
+    expect(await AndroidLibrary().loadOnboarding(), isTrue);
     final identity = DateTime.now().microsecondsSinceEpoch;
     final story = await library.call({
       'op': 'add',

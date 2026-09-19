@@ -20,6 +20,31 @@ Map<String, dynamic> sample({int id = 1}) => {
 };
 
 class FakeLibrary implements Library {
+  bool onboarded = true;
+  @override
+  Future<bool> loadOnboarding() async => onboarded;
+  @override
+  Future<void> completeOnboarding() async {
+    onboarded = true;
+  }
+
+  final sessions = <String, bool>{'ao3': false, 'ffn': false};
+  final sessionConnections = <String>[];
+  @override
+  Future<Map<String, bool>> websiteSessions() async => Map.of(sessions);
+  @override
+  Future<void> connectWebsite(String site, {required bool consent}) async {
+    if (!consent) throw Exception('Consent required');
+    sessionConnections.add(site);
+    sessions[site] = true;
+  }
+
+  @override
+  Future<void> clearWebsiteSessions({required bool consent}) async {
+    if (!consent) throw Exception('Consent required');
+    sessions.updateAll((_, _) => false);
+  }
+
   List<Map<String, dynamic>> rows;
   bool failSave = false, failList = false;
   final requests = <Map<String, dynamic>>[];

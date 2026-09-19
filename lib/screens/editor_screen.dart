@@ -166,7 +166,7 @@ class _EditorScreenState extends State<EditorScreen> {
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Fetch website details'),
                       subtitle: const Text(
-                        'Turn off to save offline. Sign-in is not available yet.',
+                        'Turn off to save offline. Manage website sign-in in Settings.',
                       ),
                       value: _fetch,
                       onChanged: _busy

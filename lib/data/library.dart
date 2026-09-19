@@ -8,8 +8,13 @@ abstract class Library {
   Future<dynamic> call(Map<String, dynamic> request, {String? requestId});
   Future<void> cancel(String requestId);
   Future<void> openLink(String url);
+  Future<Map<String, bool>> websiteSessions();
+  Future<void> connectWebsite(String site, {required bool consent});
+  Future<void> clearWebsiteSessions({required bool consent});
   Future<String?> pickBackup();
   Future<bool> saveBackup(String snapshot);
+  Future<bool> loadOnboarding();
+  Future<void> completeOnboarding();
   Future<String> loadTheme();
   Future<void> saveTheme(String theme);
 }
@@ -37,12 +42,29 @@ class AndroidLibrary implements Library {
       channel.invokeMethod('cancel', requestId);
 
   @override
+  Future<Map<String, bool>> websiteSessions() async => Map<String, bool>.from(
+    await channel.invokeMethod('websiteSessions') as Map,
+  );
+  @override
+  Future<void> connectWebsite(String site, {required bool consent}) => channel
+      .invokeMethod('connectWebsite', {'site': site, 'consent': consent});
+  @override
+  Future<void> clearWebsiteSessions({required bool consent}) =>
+      channel.invokeMethod('clearWebsiteSessions', {'consent': consent});
+
+  @override
   Future<void> openLink(String url) => channel.invokeMethod('openLink', url);
   @override
   Future<String?> pickBackup() => channel.invokeMethod<String>('pickBackup');
   @override
   Future<bool> saveBackup(String snapshot) async =>
       await channel.invokeMethod<bool>('saveBackup', snapshot) ?? false;
+  @override
+  Future<bool> loadOnboarding() async =>
+      await channel.invokeMethod<bool>('loadOnboarding') ?? false;
+  @override
+  Future<void> completeOnboarding() =>
+      channel.invokeMethod('completeOnboarding');
   @override
   Future<String> loadTheme() async =>
       await channel.invokeMethod<String>('loadTheme') ?? 'system';

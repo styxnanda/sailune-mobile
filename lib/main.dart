@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'data/library.dart';
 import 'screens/library_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'theme.dart';
 
 void main() {
@@ -21,14 +22,26 @@ class _SailuneAppState extends State<SailuneApp> {
   @override
   void initState() {
     super.initState();
-    widget.library
-        .loadTheme()
-        .then((value) {
-          if (mounted) setState(() => _theme = value);
-        })
-        .catchError((Object _) {
-          /* Library screen reports bridge failures. */
+    _loadPreferences();
+  }
+
+  bool? _onboarded;
+  Future<void> _loadPreferences() async {
+    try {
+      final values = await Future.wait<dynamic>([
+        widget.library.loadTheme(),
+        widget.library.loadOnboarding(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _theme = values[0] as String;
+          _onboarded = values[1] as bool;
         });
+      }
+    } catch (_) {
+      // Keep the library and its bridge recovery available if preferences fail.
+      if (mounted) setState(() => _onboarded = true);
+    }
   }
 
   Future<void> _setTheme(String value) async {
@@ -47,10 +60,19 @@ class _SailuneAppState extends State<SailuneApp> {
       'dark' => ThemeMode.dark,
       _ => ThemeMode.system,
     },
-    home: LibraryScreen(
-      library: widget.library,
-      theme: _theme,
-      onTheme: _setTheme,
-    ),
+    home: _onboarded == null
+        ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+        : _onboarded == false
+        ? OnboardingScreen(
+            onDone: () async {
+              await widget.library.completeOnboarding();
+              if (mounted) setState(() => _onboarded = true);
+            },
+          )
+        : LibraryScreen(
+            library: widget.library,
+            theme: _theme,
+            onTheme: _setTheme,
+          ),
   );
 }

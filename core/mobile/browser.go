@@ -7,8 +7,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	sailune "github.com/styxnanda/sailune-go"
 )
 
 // Browser is implemented by Android. Begin and Cancel must return immediately;
@@ -33,7 +31,7 @@ func (c *Client) SetBrowser(b Browser) {
 		return
 	}
 	c.browser = &nativeBrowser{native: b, pending: map[string]chan browserPage{}}
-	c.fetcher = &sailune.Scraper{Browser: &sailune.BrowserRecovery{Loader: c.browser}}
+	c.configureFetcher()
 }
 
 func (c *Client) BrowserResult(id, url, html, failure string) {
@@ -97,7 +95,13 @@ func (c *Client) Close() {
 		r.cancel()
 	}
 	b := c.browser
+	session := c.session
 	c.mu.Unlock()
+	if session != nil {
+		session.mu.Lock()
+		session.native = nil
+		session.mu.Unlock()
+	}
 	if b != nil {
 		b.mu.Lock()
 		b.native = nil

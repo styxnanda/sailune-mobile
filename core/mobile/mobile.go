@@ -25,6 +25,7 @@ type Client struct {
 	fetcher  sailune.MetadataFetcher
 	browser  *nativeBrowser
 	closed   bool
+	session  *sessionTransport
 }
 
 func NewClient(path string) (*Client, error) {
@@ -146,7 +147,7 @@ func (c *Client) Call(requestID, payload string) (string, error) {
 			return "", errors.New("this story's chapter list is unavailable. Refresh website details, or open the website to choose a chapter")
 		}
 		if errors.Is(err, sailune.ErrLoginRequired) {
-			return "", errors.New("this story requires sign-in; mobile sign-in is not available yet. Save it offline or open the website")
+			return "", errors.New("this story requires sign-in or your session expired. Open Settings → Website sessions to sign in, then retry")
 		}
 		if errors.Is(err, sailune.ErrChallenge) {
 			return "", errors.New("the website blocked this request. Save offline or try again later")

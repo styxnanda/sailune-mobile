@@ -17,6 +17,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/onboarding/
     - assets/sailune.png
     - assets/sites/ao3.svg
     - assets/sites/ffn.svg

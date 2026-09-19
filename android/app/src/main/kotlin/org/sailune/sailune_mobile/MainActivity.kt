@@ -15,6 +15,11 @@ import java.util.concurrent.Executors
 class MainActivity : FlutterActivity() {
     private val workers = Executors.newFixedThreadPool(3)
     private val client: Client by lazy { Mobile.newClient(java.io.File(filesDir, "library.sqlite3").absolutePath) }
+    private var sessions: WebsiteSessions? = null
+    private var login: SiteLoginDialog? = null
+    private var loginResult: MethodChannel.Result? = null
+    private var sessionBusy = false
+    private var runningCalls = 0
     private var storyBrowser: SilentStoryBrowser? = null
     private var pendingDocument: MethodChannel.Result? = null
     private var exportData: String? = null
@@ -22,6 +27,8 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        sessions = runCatching { WebsiteSessions(this) }.getOrNull()
+        sessions?.let { client.setWebsiteSession(it) }
         storyBrowser = SilentStoryBrowser(this, { id, url, html, error -> client.browserResult(id, url, html, error) }).also { client.setBrowser(it) }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "org.sailune.mobile/library")
             .setMethodCallHandler { call, result ->
@@ -29,12 +36,17 @@ class MainActivity : FlutterActivity() {
                     "call" -> {
                         val id = call.argument<String>("id")
                         val payload = call.argument<String>("payload")
+                        if (sessionBusy) { result.error("session", "Finish website sign-in first", null); return@setMethodCallHandler }
                         if (id == null || payload == null) result.error("request", "Missing library request", null)
                         else try {
                             // Register on the platform thread before scheduling, so a
                             // quick Cancel cannot race ahead of Go registration.
                             client.prepare(id)
-                            background(result) { client.call(id, payload) }
+                            runningCalls++
+                            background(result) {
+                                try { client.call(id, payload) }
+                                finally { runOnUiThread { runningCalls-- } }
+                            }
                         } catch (e: Exception) { result.error("library", e.message, null) }
                     }
                     "cancel" -> { client.cancel(call.arguments as? String ?: ""); result.success(null) }
@@ -45,6 +57,53 @@ class MainActivity : FlutterActivity() {
                             result.error("url", "Unsupported story link", null)
                         } else try { startActivity(Intent(Intent.ACTION_VIEW, uri)); result.success(null) }
                         catch (_: Exception) { result.error("browser", "No browser is available to open this story", null) }
+                    }
+                    "websiteSessions" -> result.success(sessions?.status() ?: mapOf("ao3" to false, "ffn" to false))
+                    "connectWebsite" -> {
+                        val site = call.argument<String>("site")
+                        if (call.argument<Boolean>("consent") != true || site !in setOf("ao3", "ffn")) {
+                            result.error("session", "Explicit website consent is required", null)
+                        } else if (sessions == null) {
+                            result.error("session", "Android WebView is unavailable. Enable or update Android System WebView, then restart Sailune", null)
+                        } else if (sessionBusy || runningCalls != 0) {
+                            result.error("busy", "Wait for the current operation to finish", null)
+                        } else try {
+                            sessions!!.enable(site!!)
+                            sessionBusy = true
+                            loginResult = result
+                            login = SiteLoginDialog(this, site, {
+                                login = null; sessionBusy = false
+                                loginResult?.success(null); loginResult = null
+                            }).also { it.open() }
+                        } catch (_: Exception) {
+                            sessionBusy = false; loginResult = null
+                            login?.dismiss(); login = null
+                            result.error("session", "Could not open website sign-in", null)
+                        }
+                    }
+                    "clearWebsiteSessions" -> {
+                        if (call.argument<Boolean>("consent") != true) {
+                            result.error("session", "Confirm clearing website sessions", null)
+                        } else if (sessions == null) {
+                            result.error("session", "Android WebView is unavailable. Enable or update Android System WebView, then restart Sailune", null)
+                        } else if (sessionBusy || runningCalls != 0) {
+                            result.error("busy", "Wait for the current operation to finish", null)
+                        } else {
+                            sessionBusy = true
+                            try { sessions!!.clear { success ->
+                                sessionBusy = false
+                                if (success) result.success(null)
+                                else result.error("session", "Could not clear website sessions", null)
+                            } } catch (_: Exception) {
+                                sessionBusy = false
+                                result.error("session", "Could not clear website sessions", null)
+                            }
+                        }
+                    }
+                    "loadOnboarding" -> result.success(getPreferences(MODE_PRIVATE).getBoolean("onboardingComplete", false))
+                    "completeOnboarding" -> background(result) {
+                        check(getPreferences(MODE_PRIVATE).edit().putBoolean("onboardingComplete", true).commit()) { "Could not save welcome tour" }
+                        null
                     }
                     "loadTheme" -> result.success(getPreferences(MODE_PRIVATE).getString("theme", "system"))
                     "saveTheme" -> {
@@ -124,6 +183,9 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() {
         pendingDocument?.error("cancelled", "File picker closed; please try again", null)
         pendingDocument = null; exportData = null
+        loginResult?.error("cancelled", "Sign-in closed; your website session remains on this device", null)
+        loginResult = null
+        login?.dismiss(); login = null
         client.close()
         storyBrowser?.close(); storyBrowser = null
         workers.shutdown()

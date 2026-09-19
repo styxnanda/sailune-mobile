@@ -84,7 +84,7 @@ SQLite and network work run off Android's UI thread. Search is debounced, outdat
 
 The library lives under Android's private app files directory. It is plaintext within the app sandbox; uninstalling removes it. Android automatic backup is disabled. Export a snapshot before uninstalling. JSON backups contain your personal notes and reading history, and can be read by anyone who has the file. Mobile file transfers are capped at 16 MiB. Import merges atomically and skips duplicate URLs; it does not synchronize edits to existing bookmarks.
 
-Mobile login, cookie import, authenticated scraping, full-story downloads, background update checks, and cloud sync are not implemented. Public fetches may encounter website restrictions or rate limits; offline entry remains available. The core's desktop keyring/browser code is a transitive dependency, but mobile never invokes those APIs or configures a session directory. A native secure-storage/session adapter is needed before enabling authentication.
+Visible website sign-in and authenticated fetching are available through Settings → Website sessions. Desktop-cookie import, full-story downloads, background update checks, and cloud sync are not implemented. Website restrictions, expired sessions, or browser-bound challenges can still prevent fetching; offline entry remains available.
 
 ## References
 
@@ -145,3 +145,48 @@ The high-contrast Add story button fades into the theme's canvas color while its
 background expands. The sheet then rises over the matching surface, and the
 expansion layer fades away. The form keeps its normal light/dark palette; reduced
 motion skips the transition. Light and dark visual tests cover expansion and rise.
+
+### Website sessions on Android
+
+Open Settings → Website sessions → Archive of Our Own or FanFiction.net. Confirm
+the consent dialog, sign in on the official website in the visible WebView, then
+tap Done. The app enables session reuse when consent is given; closing sign-in
+keeps the website session. “Session enabled” is permission to reuse cookies, not
+a claim that login succeeded. Retry Add or Refresh after signing in. Expired
+sessions show a message directing you back to Settings. The 15-second scrape
+budget does not limit the time you can spend signing in.
+
+Android CookieManager owns app-private cookie persistence and enforces cookie
+path/domain matching, including HttpOnly cookies. The native/Go transport reuses
+cookies for supported HTTPS sites and stores allowed Set-Cookie rotations.
+Cookies and passwords are never sent over the Flutter channel, written into the
+bookmark database, included in library exports, or logged. Password entry stays
+in the site's WebView; no JavaScript bridge is attached to the login page.
+Android automatic backups are disabled. This uses Android's WebView storage,
+not an additional custom Keystore-encrypted cookie export.
+
+Sign-in is restricted to the chosen website's HTTPS hosts, and TLS errors are
+never bypassed. External identity providers (such as Google sign-in) are not
+supported by this embedded flow. Website sessions cannot be changed while a
+library request is running, and fetching cannot start while sign-in is open.
+Clear website sessions removes all AO3/FFN cookies, website storage and WebView
+cache, without deleting bookmarks or already-saved metadata.
+
+Tests use synthetic sessions: authenticated metadata add, expiration/revocation,
+cookie rotation, cross-site redirect blocking, cookie-free backups, native cookie
+scope/persistence/clearing, and opening/closing the visible sign-in dialog. A real
+account login and restricted live work must still be verified by the account
+owner; no personal credentials are used by the automated tests.
+
+### First-launch tour
+
+A four-page, swipeable welcome tour points to Add story, Appearance, Website
+sessions, and library export/import. Focused screenshot cutouts show only the relevant controls and follow the active light/dark
+theme. Back/Next, Skip, reduced motion, and large text are supported. Finishing
+or skipping stores an Android preference; clearing app data resets it. Existing
+installations see the tour once after upgrading. Replay it in Settings at any
+time. The tour never opens a website or grants session consent.
+
+Regenerate the bundled screenshots from the actual Flutter screens with:
+`flutter test --update-goldens tool/onboarding_screenshots.dart`.
+Only synthetic/empty library data is used.
