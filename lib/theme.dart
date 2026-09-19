@@ -46,6 +46,7 @@ ThemeData sailuneTheme(Brightness brightness) {
           ),
         ),
     cardTheme: CardThemeData(
+      clipBehavior: Clip.antiAlias,
       elevation: 0,
       color: surface,
       margin: EdgeInsets.zero,

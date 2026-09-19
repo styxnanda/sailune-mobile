@@ -50,7 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final approved = await confirmAction(
       context,
       title: 'Sign in to $name',
-      message: 'The official website opens inside Sailune. Your password goes to the website. Sailune keeps session cookies on this device to fetch restricted stories.\n\nSign-in closes automatically once confirmed. You can clear website sessions here at any time. Cookies are never included in backups.',
+      message: 'Allow Sailune to save this website’s session on this device?',
       confirm: 'Continue to website',
       cancel: 'Not now',
     );
@@ -58,9 +58,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _run(() async {
       final signedIn = await widget.library.connectWebsite(site, consent: true);
       await _loadSessions();
-      return signedIn
-          ? 'Signed in. Your session is saved on this device.'
-          : 'Sign-in closed. You can try again any time.';
+      return signedIn ? 'Signed in' : 'Sign-in cancelled';
     });
   }
 
@@ -68,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final approved = await confirmAction(
       context,
       title: 'Clear website sessions?',
-      message: 'This removes website cookies and storage from Sailune. Your bookmarks and saved story details stay intact.',
+      message: 'Sign out of all websites?',
       confirm: 'Clear sessions',
       cancel: 'Keep sessions',
     );
@@ -143,11 +141,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Website sessions',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Sign in to fetch stories that require an account. A saved session does not guarantee access; websites may ask you to sign in again.',
-                style: TextStyle(height: 1.6),
-              ),
               const SizedBox(height: 16),
               Card(
                 child: Column(
@@ -160,9 +153,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         leading: const Icon(Icons.lock_outline),
                         title: Text(site.value),
                         subtitle: Text(
-                          _sessions[site.key] == true
-                              ? 'Sign-in saved · tap to reconnect'
-                              : 'Sign in on the website',
+                          _sessions[site.key] == true ? 'Signed in' : 'Sign in',
                         ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: _busy ? null : () => _connect(site.key),
@@ -181,11 +172,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Your collection',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Take your stories between Sailune on desktop and mobile with a library backup.',
-                style: TextStyle(height: 1.6),
-              ),
               const SizedBox(height: 16),
               Card(
                 child: Column(
@@ -194,9 +180,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       minVerticalPadding: 18,
                       leading: const Icon(Icons.file_upload_outlined),
                       title: const Text('Save a backup'),
-                      subtitle: const Text(
-                        'Choose where to save your JSON file',
-                      ),
                       onTap: _busy
                           ? null
                           : () => _run(() async {
@@ -213,9 +196,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       minVerticalPadding: 18,
                       leading: const Icon(Icons.file_download_outlined),
                       title: const Text('Import a collection'),
-                      subtitle: const Text(
-                        'Merge stories; existing bookmarks stay intact',
-                      ),
                       onTap: _busy
                           ? null
                           : () => _run(() async {
@@ -241,22 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.only(top: 20),
                   child: Semantics(liveRegion: true, child: Text(_message!)),
                 ),
-              const SizedBox(height: 16),
-              const Text(
-                'Backups include your notes and reading history. Store them somewhere you trust. Transfers are snapshots, not automatic sync.',
-                style: TextStyle(fontSize: 12, height: 1.7),
-              ),
               const SizedBox(height: 32),
-              Text(
-                'A quieter way to keep stories',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Sailune keeps your library on this device. Read on the original website, and keep your place here.\n\nPublic story details can be fetched from AO3 and FanFiction.net. Website sessions let you fetch restricted story details after signing in. Full-story downloads are not available.',
-                style: TextStyle(height: 1.7),
-              ),
-              const SizedBox(height: 24),
               ListTile(
                 leading: const Icon(Icons.auto_stories_outlined),
                 title: const Text('Replay welcome tour'),

@@ -75,7 +75,7 @@ internal class SiteLoginDialog(
         bar.addView(close, LinearLayout.LayoutParams(dp(72),dp(48)))
         layout.addView(bar)
         val note = TextView(activity).apply {
-            text = "Closes automatically when you’re signed in."
+            visibility = View.GONE
             setTextColor(muted); textSize = 12f; setPadding(dp(20),0,dp(20),dp(16))
         }
         layout.addView(note)
@@ -108,6 +108,7 @@ internal class SiteLoginDialog(
         web.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(v: WebView, request: WebResourceRequest): Boolean {
                 if (request.isForMainFrame && WebsiteSessions.site(request.url.toString()) != site) {
+                    note.visibility = View.VISIBLE
                     note.text = "External sign-in providers cannot share a session here. Use this site’s own sign-in."
                     return true
                 }
@@ -125,6 +126,7 @@ internal class SiteLoginDialog(
             }
             override fun onReceivedSslError(v: WebView, h: SslErrorHandler, e: android.net.http.SslError) {
                 h.cancel(); generation++; handler.removeCallbacksAndMessages(null)
+                note.visibility = View.VISIBLE
                 note.text = "Could not establish a secure connection. Close and try again."
             }
             override fun onReceivedHttpAuthRequest(v: WebView, h: HttpAuthHandler, host: String, realm: String) { h.cancel() }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../data/library.dart';
 import '../widgets/app_feedback.dart';
@@ -12,12 +13,10 @@ import 'settings_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   final Library library;
-  final GlobalKey? logoKey;
   final String theme;
   final Future<void> Function(String) onTheme;
   const LibraryScreen({
     super.key,
-    this.logoKey,
     required this.library,
     required this.theme,
     required this.onTheme,
@@ -100,24 +99,72 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   Future<void> _progress(Story story, int chapter) async {
+    await _patch(story, {'Chapter': chapter});
+  }
+
+  Future<bool> _patch(Story story, Map<String, dynamic> patch) async {
+    if (_saving.contains(story.id)) return false;
     setState(() => _saving.add(story.id));
     try {
       final data = await widget.library.call({
         'op': 'update',
         'id': story.id,
-        'patch': {'Chapter': chapter},
+        'patch': patch,
       });
       if (mounted) {
+        final updated = Story(Map<String, dynamic>.from(data as Map));
         setState(
           () => _stories = _stories
-              .map(
-                (s) => s.id == story.id
-                    ? Story(Map<String, dynamic>.from(data as Map))
-                    : s,
-              )
+              .map((s) => s.id == story.id ? updated : s)
+              .where((s) => _shelf.isEmpty || s.status == _shelf)
               .toList(),
         );
       }
+      return true;
+    } catch (e) {
+      _message(errorMessage(e));
+      return false;
+    } finally {
+      if (mounted) setState(() => _saving.remove(story.id));
+    }
+  }
+
+  Future<void> _chapterAction(Story story, bool copy) async {
+    if (_saving.contains(story.id)) return;
+    setState(() => _saving.add(story.id));
+    try {
+      final url = await widget.library.call({
+        'op': 'open',
+        'id': story.id,
+        'chapter': story.chapter < 1 ? 1 : story.chapter,
+      }) as String;
+      if (!mounted) return;
+      if (copy) {
+        await Clipboard.setData(ClipboardData(text: url));
+      } else {
+        await widget.library.openLink(url);
+      }
+    } catch (e) {
+      _message(errorMessage(e));
+    } finally {
+      if (mounted) setState(() => _saving.remove(story.id));
+    }
+  }
+
+  Future<void> _delete(Story story) async {
+    if (_saving.contains(story.id)) return;
+    final confirmed = await confirmAction(
+      context,
+      title: 'Remove this bookmark?',
+      message: story.title,
+      confirm: 'Remove',
+      cancel: 'Keep story',
+    );
+    if (confirmed != true || !mounted || _saving.contains(story.id)) return;
+    setState(() => _saving.add(story.id));
+    try {
+      await widget.library.call({'op': 'delete', 'id': story.id});
+      if (mounted) await _load();
     } catch (e) {
       _message(errorMessage(e));
     } finally {
@@ -207,7 +254,6 @@ class _LibraryScreenState extends State<LibraryScreen>
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Unread chapters'),
-                  subtitle: const Text('Based on saved website details'),
                   value: unread,
                   onChanged: (value) => update(() => unread = value),
                 ),
@@ -251,7 +297,6 @@ class _LibraryScreenState extends State<LibraryScreen>
         title: Row(
           children: [
             ClipOval(
-              key: widget.logoKey,
               child: Image.asset(
                 'assets/sailune.png',
                 width: 30,
@@ -481,6 +526,15 @@ class _LibraryScreenState extends State<LibraryScreen>
                           key: ValueKey(story.id),
                           story: story,
                           onOpen: () => _open(story),
+                          onDelete: _saving.contains(story.id)
+                              ? null
+                              : () => _delete(story),
+                          onChapter: _saving.contains(story.id)
+                              ? null
+                              : (copy) => _chapterAction(story, copy),
+                          onStatus: _saving.contains(story.id)
+                              ? null
+                              : (status) => _patch(story, {'Status': status}),
                           onProgress: _saving.contains(story.id)
                               ? null
                               : (value) => _progress(story, value),

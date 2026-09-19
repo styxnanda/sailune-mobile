@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item><shape><solid android:color="#4AC6F4" /></shape></item>
+    <item><shape><solid android:color="?android:colorBackground" /></shape></item>
 </layer-list>

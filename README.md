@@ -205,8 +205,18 @@ Only synthetic/empty library data is used.
 ### App presentation
 
 Confirmation sheets and transient notices share Sailune's surface, typography,
-and rounded controls. Cold starts show the beach artwork, then a circular reveal
-shrinks into the measured library logo. It runs once per app instance, not on
-resume or appearance changes, and respects reduced motion. On a first launch
-without a library logo, the artwork fades into onboarding. Android's initial
-system launch screen still precedes Flutter's animation.
+and rounded controls. Startup uses a static centered icon and app name while
+preferences load, with no travel animation or artificial delay. Grouped settings
+cards clip their pressed highlights to the rounded outline.
+
+### Library card shortcuts
+
+Tap the chapter count to reveal Open and Copy link. These resolve the displayed
+chapter (chapter 0 resolves to chapter 1) without updating progress. Tap outside
+to collapse them. Long-press a card to confirm deletion.
+
+Swipe the folded status corner right/down to advance, or left/up to reverse:
+To read → Reading → Completed → On hold → Dropped. Only the fold twists;
+short/cancelled drags do not save. Failed writes keep the prior status. Screen
+readers can use the fold's increase/decrease actions, and reduced motion disables
+the twist. Active shelf filters are respected when status changes.

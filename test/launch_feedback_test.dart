@@ -5,56 +5,26 @@ import 'package:sailune_mobile/widgets/app_feedback.dart';
 import 'package:sailune_mobile/theme.dart';
 
 void main() {
-  testWidgets(
-    'cold launch covers the screen, settles into logo, and never replays',
-    (tester) async {
-      final logo = GlobalKey();
-      Widget app(bool ready) => MaterialApp(
-        theme: sailuneTheme(Brightness.dark),
-        home: LaunchReveal(
-          ready: ready,
-          logoKey: logo,
-          child: Scaffold(
-            appBar: AppBar(title: SizedBox(key: logo, width: 30, height: 30)),
-          ),
-        ),
-      );
-      await tester.pumpWidget(app(false));
-      expect(find.byType(ClipRRect), findsOneWidget);
-      final initial = tester.getRect(find.byType(ClipRRect));
-      expect(
-        initial.size,
-        tester.view.physicalSize / tester.view.devicePixelRatio,
-      );
-      await tester.pumpWidget(app(true));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 700));
-      final mid = tester.getRect(find.byType(ClipRRect));
-      expect(mid.width, lessThan(initial.width));
-      expect(mid.height, lessThan(initial.height));
-      await tester.pumpAndSettle();
-      expect(find.byType(ClipRRect), findsNothing);
-      await tester.pumpWidget(app(true));
-      await tester.pump();
-      expect(find.byType(ClipRRect), findsNothing);
-    },
-  );
-
-  testWidgets('reduced motion skips launch travel', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: LaunchReveal(
-            ready: true,
-            logoKey: GlobalKey(),
-            child: const Scaffold(),
-          ),
-        ),
+  testWidgets('launch is a static centered icon and name until ready', (
+    tester,
+  ) async {
+    Widget app(bool ready) => MaterialApp(
+      theme: sailuneTheme(Brightness.dark),
+      home: LaunchReveal(
+        ready: ready,
+        child: const Scaffold(body: Text('Library')),
       ),
     );
-    await tester.pumpAndSettle();
-    expect(find.byType(ClipRRect), findsNothing);
+    await tester.pumpWidget(app(false));
+    expect(find.text('sailune'), findsOneWidget);
+    expect(find.text('Library'), findsNothing);
+    final before = tester.getRect(find.byType(Image));
+    await tester.pump(const Duration(seconds: 2));
+    expect(tester.getRect(find.byType(Image)), before);
+    expect(before.size, const Size(88, 88));
+    await tester.pumpWidget(app(true));
+    expect(find.text('Library'), findsOneWidget);
+    expect(find.byKey(const ValueKey('launch-brand')), findsNothing);
   });
 
   testWidgets('custom confirmation preserves explicit cancel and confirm', (

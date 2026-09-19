@@ -100,6 +100,9 @@ class FakeLibrary implements Library {
         rows.removeWhere((r) => r['id'] == request['id']);
         return true;
       case 'open':
+        if (request['chapter'] != null) {
+          return 'https://www.fanfiction.net/s/${request['id']}/${request['chapter']}';
+        }
         return rows.firstWhere((r) => r['id'] == request['id'])['url'];
       case 'resume':
         return 'https://www.fanfiction.net/s/${request['id']}/8';

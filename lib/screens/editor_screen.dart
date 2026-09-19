@@ -141,13 +141,6 @@ class _EditorScreenState extends State<EditorScreen> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [
-                  Text(
-                    widget.story == null
-                        ? 'Something worth coming back to.'
-                        : 'Make a little room for your notes.',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 24),
                   if (widget.story == null) ...[
                     TextFormField(
                       controller: _url,
@@ -165,9 +158,6 @@ class _EditorScreenState extends State<EditorScreen> {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Fetch website details'),
-                      subtitle: const Text(
-                        'Turn off to save offline. Manage website sign-in in Settings.',
-                      ),
                       value: _fetch,
                       onChanged: _busy
                           ? null

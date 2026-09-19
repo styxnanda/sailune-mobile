@@ -66,7 +66,7 @@ class _StoryScreenState extends State<StoryScreen> {
     final confirmed = await confirmAction(
       context,
       title: 'Remove this bookmark?',
-      message: 'Your progress, notes, and rating will be removed. The story stays on its website.',
+      message: 'Remove this story from your library?',
       confirm: 'Remove',
       cancel: 'Keep story',
     );
@@ -178,16 +178,6 @@ class _StoryScreenState extends State<StoryScreen> {
                   icon: const Icon(Icons.auto_stories_outlined),
                   label: Text(
                     _story.caughtUp ? 'Read again' : 'Read next chapter',
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Opens in your browser. Progress changes only when you save it.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.5,
-                    color: colors.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -317,7 +307,6 @@ class _StoryScreenState extends State<StoryScreen> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.refresh_rounded),
                   title: const Text('Refresh website details'),
-                  subtitle: const Text('Your notes and progress stay yours'),
                   onTap: _busy
                       ? null
                       : () => _run(
