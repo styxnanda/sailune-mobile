@@ -14,7 +14,7 @@ Screenshots contain synthetic test stories, not a preloaded collection.
 ## Features
 
 - Add AO3 and FanFiction.net stories with public metadata, or save offline. The full-width add button expands into a rising form sheet.
-- Scraping shows a centered animated dialog with five fading waiting messages, Cancel, and a 15-second network deadline. Cancelled or failed fetches retain the form.
+- Scraping runs without popups. Inline progress offers Cancel and keeps a 15-second total deadline across HTTP and background WebView recovery. Cancelled or failed fetches retain the form.
 - Search, shelves, website filtering, unread-chapter filtering, and sorting.
 - Bounded SQL pages of 40 stories and lazy scrolling.
 - Edit titles, authors, progress, personal tags, notes, and ratings.
@@ -38,7 +38,7 @@ Projects/
   sailune-mobile/    # this repository
 ```
 
-The `core/go.mod` replacement points at `../../sailune-cli`. CI pins core commit `27cfc124fb9f5757e76c8704b9c94213f3f00a67`. Use that revision for reproducible builds. Local core changes are picked up deliberately when you rebuild the bindings.
+The `core/go.mod` replacement points at `../../sailune-cli`. CI pins core commit `84f0017bc00fc36d2666193d81b7d8a611331a18`. Use that revision for reproducible builds. Local core changes are picked up deliberately when you rebuild the bindings.
 
 ```sh
 # Set JAVA_HOME and ANDROID_HOME to your installed JDK and SDK.
@@ -99,6 +99,49 @@ Licensed under [GPL-3.0](LICENSE). Bundled Roboto uses the license in `assets/fo
 The pinned shared core retries transient network failures and HTTP 525 with
 bounded exponential backoff, up to four attempts. Android keeps its 15-second total deadline and cancellation button.
 Login gates and browser challenges remain explicit failures; failed refreshes
-preserve saved metadata. See the [measured reliability report](https://github.com/styxnanda/sailune-go/blob/27cfc124fb9f5757e76c8704b9c94213f3f00a67/docs/scraping-reliability.md).
+preserve saved metadata. See the [measured reliability report](https://github.com/styxnanda/sailune-go/blob/84f0017bc00fc36d2666193d81b7d8a611331a18/docs/scraping-reliability.md).
 The live sample improved AO3 recovery but did not reach 90% across both sites
 because FFN continued to require browser challenges.
+
+### Experimental silent FFN browser prototype
+
+FFN HTTP fetches receive up to 5 seconds before browser recovery is considered
+for a challenge, missing metadata, or an HTTP deadline. Android uses an on-demand,
+unattached WebView for the remaining total 15-second budget. It runs JavaScript
+and keeps app-private cookies/DOM storage; it never opens an external browser,
+asks for verification, imports personal browser cookies, or solves interactive
+challenges. Permission requests and JavaScript prompts are denied. Only the
+story header is returned to Go, where origin, work identity, size and parsed
+metadata are validated. A blocked attempt preserves existing data and displays
+an inline error. Browser work is serialized and failures cool down for 60 seconds
+within the running client; user cancellation does not trigger cooldown.
+
+The WebView is destroyed on completion, cancellation, timeout, or Activity
+shutdown. It has images disabled and no native JavaScript bridge. This limits
+idle work but does not make browser rendering as cheap as HTTP. Emulators cannot
+establish real-device FFN compatibility.
+
+Native regression tests (with an emulator connected):
+
+```sh
+cd android
+./gradlew :app:connectedDebugAndroidTest
+```
+
+The network-dependent `liveFFNSample` instrumentation test is skipped unless the
+runner receives `-e liveFFN true`. It reports results rather than asserting an
+unproven success target. This experimental integration is included in the pinned shared core. Further
+FFN reliability work is on hold; no higher success rate is promised.
+
+Local FFN test result: the direct Android WebView recovered 0/8 supplied stories
+on the API 35 emulator; each blocked attempt ended at about 15 seconds. The
+three deterministic native WebView tests passed, as did the Flutter/Go checks.
+This is a working experimental integration, not a demonstrated FFN reliability
+fix. Physical-device behavior remains unverified.
+
+### Add-story motion
+
+The high-contrast Add story button fades into the theme's canvas color while its
+background expands. The sheet then rises over the matching surface, and the
+expansion layer fades away. The form keeps its normal light/dark palette; reduced
+motion skips the transition. Light and dark visual tests cover expansion and rise.

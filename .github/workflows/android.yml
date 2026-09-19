@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: styxnanda/sailune-go
-          ref: 27cfc124fb9f5757e76c8704b9c94213f3f00a67
+          ref: 84f0017bc00fc36d2666193d81b7d8a611331a18
           path: sailune-cli
       - uses: actions/setup-go@v5
         with:
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: styxnanda/sailune-go
-          ref: 27cfc124fb9f5757e76c8704b9c94213f3f00a67
+          ref: 84f0017bc00fc36d2666193d81b7d8a611331a18
           path: sailune-cli
       - uses: actions/setup-go@v5
         with:

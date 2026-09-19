@@ -2,7 +2,7 @@ module github.com/styxnanda/sailune-mobile/core
 
 go 1.26.0
 
-require github.com/styxnanda/sailune-go v0.0.0-20260919031628-27cfc124fb9f
+require github.com/styxnanda/sailune-go v0.0.0-20260919124210-84f0017bc00f
 
 require (
 	github.com/danieljoos/wincred v1.2.3 // indirect
@@ -14,8 +14,11 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/zalando/go-keyring v0.2.8 // indirect
 	golang.org/x/mobile v0.0.0-20260908204917-8b95e45f8d3e // indirect
-	golang.org/x/net v0.58.0 // indirect
+	golang.org/x/mod v0.41.0 // indirect
+	golang.org/x/net v0.59.0 // indirect
+	golang.org/x/sync v0.23.0 // indirect
 	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/tools v0.50.0 // indirect
 	modernc.org/libc v1.75.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
@@ -23,3 +26,5 @@ require (
 )
 
 replace github.com/styxnanda/sailune-go => ../../sailune-cli
+
+tool golang.org/x/mobile/cmd/gobind

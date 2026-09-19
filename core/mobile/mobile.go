@@ -23,6 +23,8 @@ type Client struct {
 	mu       sync.Mutex
 	requests map[string]*activeRequest
 	fetcher  sailune.MetadataFetcher
+	browser  *nativeBrowser
+	closed   bool
 }
 
 func NewClient(path string) (*Client, error) {
@@ -57,6 +59,10 @@ func (c *Client) Call(requestID, payload string) (string, error) {
 		return "", errors.New("request ID is required")
 	}
 	c.mu.Lock()
+	if c.closed {
+		c.mu.Unlock()
+		return "", errors.New("client closed")
+	}
 	active := c.requests[requestID]
 	if active == nil {
 		active = newRequest()
@@ -182,6 +188,9 @@ func (c *Client) Prepare(requestID string) error {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if c.closed {
+		return errors.New("client closed")
+	}
 	if _, exists := c.requests[requestID]; exists {
 		return errors.New("request ID already active")
 	}

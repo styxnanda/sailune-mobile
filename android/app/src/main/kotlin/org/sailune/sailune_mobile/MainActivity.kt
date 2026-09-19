@@ -15,12 +15,14 @@ import java.util.concurrent.Executors
 class MainActivity : FlutterActivity() {
     private val workers = Executors.newFixedThreadPool(3)
     private val client: Client by lazy { Mobile.newClient(java.io.File(filesDir, "library.sqlite3").absolutePath) }
+    private var storyBrowser: SilentStoryBrowser? = null
     private var pendingDocument: MethodChannel.Result? = null
     private var exportData: String? = null
     private val maxBackupBytes = 16 * 1024 * 1024
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        storyBrowser = SilentStoryBrowser(this, { id, url, html, error -> client.browserResult(id, url, html, error) }).also { client.setBrowser(it) }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "org.sailune.mobile/library")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -122,6 +124,8 @@ class MainActivity : FlutterActivity() {
     override fun onDestroy() {
         pendingDocument?.error("cancelled", "File picker closed; please try again", null)
         pendingDocument = null; exportData = null
+        client.close()
+        storyBrowser?.close(); storyBrowser = null
         workers.shutdown()
         super.onDestroy()
     }

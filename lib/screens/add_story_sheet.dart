@@ -11,7 +11,9 @@ Future<bool?> showAddStorySheet(
   Rect origin,
 ) {
   final reduceMotion = MediaQuery.disableAnimationsOf(context);
-  final fillColor = Theme.of(context).colorScheme.primary;
+  final theme = Theme.of(context);
+  final fillColor = theme.colorScheme.primary;
+  final sheetColor = theme.scaffoldBackgroundColor;
   return Navigator.of(context).push<bool>(
     PageRouteBuilder<bool>(
       opaque: false,
@@ -59,10 +61,16 @@ Future<bool?> showAddStorySheet(
               Positioned.fromRect(
                 rect: rectangle,
                 child: Opacity(
-                  opacity: animation.value == 0 ? 0 : 1,
+                  opacity: animation.value == 0 ? 0 : 1 - rise,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: fillColor,
+                      // Resolve the contrast before the form enters, so the two
+                      // surfaces meet without changing the sheet theme.
+                      color: Color.lerp(
+                        fillColor,
+                        sheetColor,
+                        Curves.easeOut.transform(fill),
+                      ),
                       borderRadius: BorderRadius.circular(16 * (1 - fill)),
                     ),
                   ),

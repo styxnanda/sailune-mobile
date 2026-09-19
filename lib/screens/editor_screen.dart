@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/library.dart';
 import '../models/story.dart';
-import '../widgets/scrape_dialog.dart';
+import '../widgets/scrape_task.dart';
 
 class EditorScreen extends StatefulWidget {
   final Library library;
@@ -30,9 +30,11 @@ class _EditorScreenState extends State<EditorScreen> {
   late int _rating;
   bool _fetch = true, _busy = false;
   String? _error;
+  late final ScrapeTask _scrape;
   @override
   void initState() {
     super.initState();
+    _scrape = ScrapeTask(widget.library);
     final s = widget.story;
     _url = TextEditingController(text: s?.url);
     _title = TextEditingController(text: s?.json['title'] as String?);
@@ -46,6 +48,7 @@ class _EditorScreenState extends State<EditorScreen> {
 
   @override
   void dispose() {
+    _scrape.dispose();
     for (final c in [_url, _title, _author, _chapter, _tags, _notes]) {
       c.dispose();
     }
@@ -82,7 +85,7 @@ class _EditorScreenState extends State<EditorScreen> {
           },
         };
         if (_fetch) {
-          await scrapeWithDialog(context, widget.library, request);
+          await _scrape.run(request);
         } else {
           await widget.library.call(request);
         }
@@ -265,6 +268,7 @@ class _EditorScreenState extends State<EditorScreen> {
                       hintText: 'A favorite moment, a thought for later…',
                     ),
                   ),
+                  InlineScrapeProgress(task: _scrape),
                   if (_error != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 20),

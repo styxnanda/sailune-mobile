@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../data/library.dart';
 import '../models/story.dart';
-import '../widgets/scrape_dialog.dart';
+import '../widgets/scrape_task.dart';
 import 'editor_screen.dart';
 
 class StoryScreen extends StatefulWidget {
@@ -18,10 +18,18 @@ class _StoryScreenState extends State<StoryScreen> {
   late Story _story;
   bool _busy = false;
   String? _error;
+  late final ScrapeTask _scrape;
   @override
   void initState() {
     super.initState();
+    _scrape = ScrapeTask(widget.library);
     _story = widget.initial;
+  }
+
+  @override
+  void dispose() {
+    _scrape.dispose();
+    super.dispose();
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -40,7 +48,7 @@ class _StoryScreenState extends State<StoryScreen> {
 
   Future<void> _update(Map<String, dynamic> request) async {
     final result = request['op'] == 'refresh'
-        ? await scrapeWithDialog(context, widget.library, request)
+        ? await _scrape.run(request)
         : await widget.library.call(request);
     if (mounted) {
       setState(() => _story = Story(Map<String, dynamic>.from(result as Map)));
@@ -289,7 +297,8 @@ class _StoryScreenState extends State<StoryScreen> {
                       ),
                     ),
                   ),
-                if (_busy)
+                InlineScrapeProgress(task: _scrape),
+                if (_busy && !_scrape.running)
                   const Padding(
                     padding: EdgeInsets.only(top: 20),
                     child: LinearProgressIndicator(),

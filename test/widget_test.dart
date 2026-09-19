@@ -202,10 +202,10 @@ void main() {
     await tester.tap(find.text('Save to library'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.byType(Dialog), findsOneWidget);
+    expect(find.byType(Dialog), findsNothing);
     await expectLater(
       find.byType(SailuneApp),
-      matchesGoldenFile('goldens/scraping_dialog.png'),
+      matchesGoldenFile('goldens/scraping_inline.png'),
     );
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
@@ -253,6 +253,22 @@ void main() {
         find.byType(SailuneApp),
         matchesGoldenFile('goldens/library_${dark ? 'dark' : 'light'}.png'),
       );
+      await tester.tap(find.widgetWithText(FilledButton, 'Add story'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await expectLater(
+        find.byType(SailuneApp),
+        matchesGoldenFile(
+          'goldens/add_transition_${dark ? 'dark' : 'light'}.png',
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 180));
+      await expectLater(
+        find.byType(SailuneApp),
+        matchesGoldenFile('goldens/add_rise_${dark ? 'dark' : 'light'}.png'),
+      );
+      await tester.pumpAndSettle();
+
       expect(tester.takeException(), isNull);
     });
   }
