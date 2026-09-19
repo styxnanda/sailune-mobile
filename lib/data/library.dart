@@ -9,7 +9,7 @@ abstract class Library {
   Future<void> cancel(String requestId);
   Future<void> openLink(String url);
   Future<Map<String, bool>> websiteSessions();
-  Future<void> connectWebsite(String site, {required bool consent});
+  Future<bool> connectWebsite(String site, {required bool consent});
   Future<void> clearWebsiteSessions({required bool consent});
   Future<String?> pickBackup();
   Future<bool> saveBackup(String snapshot);
@@ -46,8 +46,12 @@ class AndroidLibrary implements Library {
     await channel.invokeMethod('websiteSessions') as Map,
   );
   @override
-  Future<void> connectWebsite(String site, {required bool consent}) => channel
-      .invokeMethod('connectWebsite', {'site': site, 'consent': consent});
+  Future<bool> connectWebsite(String site, {required bool consent}) async =>
+      await channel.invokeMethod<bool>('connectWebsite', {
+        'site': site,
+        'consent': consent,
+      }) ??
+      false;
   @override
   Future<void> clearWebsiteSessions({required bool consent}) =>
       channel.invokeMethod('clearWebsiteSessions', {'consent': consent});

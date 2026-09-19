@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/library.dart';
+import '../widgets/app_feedback.dart';
 import '../models/story.dart';
 import '../widgets/story_card.dart';
 import 'add_story_sheet.dart';
@@ -11,10 +12,12 @@ import 'settings_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   final Library library;
+  final GlobalKey? logoKey;
   final String theme;
   final Future<void> Function(String) onTheme;
   const LibraryScreen({
     super.key,
+    this.logoKey,
     required this.library,
     required this.theme,
     required this.onTheme,
@@ -92,7 +95,7 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   void _message(String text) {
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+      showAppNotice(context, text);
     }
   }
 
@@ -247,11 +250,14 @@ class _LibraryScreenState extends State<LibraryScreen>
       appBar: AppBar(
         title: Row(
           children: [
-            Image.asset(
-              'assets/sailune.png',
-              width: 30,
-              height: 30,
-              excludeFromSemantics: true,
+            ClipOval(
+              key: widget.logoKey,
+              child: Image.asset(
+                'assets/sailune.png',
+                width: 30,
+                height: 30,
+                excludeFromSemantics: true,
+              ),
             ),
             const SizedBox(width: 10),
             const Text(

@@ -31,7 +31,7 @@ void main() {
     await tester.tap(find.text('Continue to website'));
     await tester.pumpAndSettle();
     expect(library.sessionConnections, ['ao3']);
-    expect(find.text('Session enabled · tap to sign in again'), findsOneWidget);
+    expect(find.text('Sign-in saved · tap to reconnect'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Clear website sessions'), 100);
     await tester.tap(find.text('Clear website sessions'));
     await tester.pumpAndSettle();

@@ -33,10 +33,11 @@ class FakeLibrary implements Library {
   @override
   Future<Map<String, bool>> websiteSessions() async => Map.of(sessions);
   @override
-  Future<void> connectWebsite(String site, {required bool consent}) async {
+  Future<bool> connectWebsite(String site, {required bool consent}) async {
     if (!consent) throw Exception('Consent required');
     sessionConnections.add(site);
     sessions[site] = true;
+    return true;
   }
 
   @override

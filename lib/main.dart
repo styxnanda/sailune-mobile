@@ -4,6 +4,7 @@ import 'data/library.dart';
 import 'screens/library_screen.dart';
 import 'screens/onboarding_screen.dart';
 import 'theme.dart';
+import 'widgets/launch_reveal.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,7 @@ class SailuneApp extends StatefulWidget {
 
 class _SailuneAppState extends State<SailuneApp> {
   String _theme = 'system';
+  final _logoKey = GlobalKey();
   @override
   void initState() {
     super.initState();
@@ -60,6 +62,11 @@ class _SailuneAppState extends State<SailuneApp> {
       'dark' => ThemeMode.dark,
       _ => ThemeMode.system,
     },
+    builder: (context, child) => LaunchReveal(
+      ready: _onboarded != null,
+      logoKey: _logoKey,
+      child: child!,
+    ),
     home: _onboarded == null
         ? const Scaffold(body: Center(child: CircularProgressIndicator()))
         : _onboarded == false
@@ -70,6 +77,7 @@ class _SailuneAppState extends State<SailuneApp> {
             },
           )
         : LibraryScreen(
+            logoKey: _logoKey,
             library: widget.library,
             theme: _theme,
             onTheme: _setTheme,

@@ -17,11 +17,18 @@ internal class WebsiteSessions(context: Context) : WebsiteSession {
     private val handler = Handler(Looper.getMainLooper())
     private val cookies = CookieManager.getInstance()
     init { cookies.setAcceptCookie(true) }
-    fun status() = mapOf("ao3" to enabled("ao3"), "ffn" to enabled("ffn"))
+    fun status() = listOf("ao3", "ffn").associateWith {
+        enabled(it) && preferences.getBoolean("$it-confirmed", false) && !cookies.getCookie(loginURL(it)).isNullOrBlank()
+    }
+    fun confirm(site: String) {
+        check(enabled(site))
+        cookies.flush()
+        check(preferences.edit().putBoolean("$site-confirmed", true).commit()) { "Could not save sign-in" }
+    }
     fun enabled(site: String) = preferences.getBoolean(site, false)
     fun enable(site: String) {
         require(site in setOf("ao3", "ffn"))
-        check(preferences.edit().putBoolean(site, true).commit()) { "Could not save website consent" }
+        check(preferences.edit().putBoolean(site, true).putBoolean("$site-confirmed", false).commit()) { "Could not save website consent" }
     }
     override fun cookies(url: String): String {
         val site = site(url) ?: return ""

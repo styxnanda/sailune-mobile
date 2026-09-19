@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/library.dart';
+import '../widgets/app_feedback.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -46,52 +47,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _connect(String site) async {
     final name = site == 'ao3' ? 'Archive of Our Own' : 'FanFiction.net';
-    final approved = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Sign in to $name'),
-        content: const Text(
-          'The official website will open inside Sailune. Your password goes to the website. Sailune will keep its session cookies on this device and use them to fetch stories, including restricted works.\n\nClosing sign-in keeps the session. You can remove all website sessions here at any time. Session cookies are not included in library backups.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Not now'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Continue to website'),
-          ),
-        ],
-      ),
+    final approved = await confirmAction(
+      context,
+      title: 'Sign in to $name',
+      message: 'The official website opens inside Sailune. Your password goes to the website. Sailune keeps session cookies on this device to fetch restricted stories.\n\nSign-in closes automatically once confirmed. You can clear website sessions here at any time. Cookies are never included in backups.',
+      confirm: 'Continue to website',
+      cancel: 'Not now',
     );
     if (approved != true || !mounted) return;
     await _run(() async {
-      await widget.library.connectWebsite(site, consent: true);
+      final signedIn = await widget.library.connectWebsite(site, consent: true);
       await _loadSessions();
-      return 'Session enabled. Retry adding or refreshing your story. Access depends on your website sign-in.';
+      return signedIn
+          ? 'Signed in. Your session is saved on this device.'
+          : 'Sign-in closed. You can try again any time.';
     });
   }
 
   Future<void> _clearSessions() async {
-    final approved = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Clear website sessions?'),
-        content: const Text(
-          'This removes all website cookies and local website storage from Sailune. Your bookmarks and saved story details stay intact. You may need to sign in again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep sessions'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear sessions'),
-          ),
-        ],
-      ),
+    final approved = await confirmAction(
+      context,
+      title: 'Clear website sessions?',
+      message: 'This removes website cookies and storage from Sailune. Your bookmarks and saved story details stay intact.',
+      confirm: 'Clear sessions',
+      cancel: 'Keep sessions',
     );
     if (approved != true || !mounted) return;
     await _run(() async {
@@ -182,7 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         title: Text(site.value),
                         subtitle: Text(
                           _sessions[site.key] == true
-                              ? 'Session enabled · tap to sign in again'
+                              ? 'Sign-in saved · tap to reconnect'
                               : 'Sign in on the website',
                         ),
                         trailing: const Icon(Icons.chevron_right),

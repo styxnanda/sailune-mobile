@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/library.dart';
+import '../widgets/app_feedback.dart';
 import '../models/story.dart';
 import '../widgets/scrape_task.dart';
 import 'editor_screen.dart';
@@ -62,24 +63,12 @@ class _StoryScreenState extends State<StoryScreen> {
   }
 
   Future<void> _delete() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Remove this bookmark?'),
-        content: const Text(
-          'Your progress, notes, and rating for this story will be removed. The story stays on its website.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Keep story'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Remove'),
-          ),
-        ],
-      ),
+    final confirmed = await confirmAction(
+      context,
+      title: 'Remove this bookmark?',
+      message: 'Your progress, notes, and rating will be removed. The story stays on its website.',
+      confirm: 'Remove',
+      cancel: 'Keep story',
     );
     if (confirmed == true) {
       await _run(() async {
@@ -348,9 +337,7 @@ class _StoryScreenState extends State<StoryScreen> {
                   onTap: () async {
                     await Clipboard.setData(ClipboardData(text: _story.url));
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Story link copied')),
-                      );
+                      showAppNotice(context, 'Story link copied');
                     }
                   },
                 ),

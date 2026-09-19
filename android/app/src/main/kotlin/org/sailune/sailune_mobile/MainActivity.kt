@@ -55,7 +55,15 @@ class MainActivity : FlutterActivity() {
                         val hosts = setOf("archiveofourown.org", "www.archiveofourown.org", "www.fanfiction.net", "fanfiction.net")
                         if (uri.scheme != "https" || uri.host !in hosts || uri.userInfo != null) {
                             result.error("url", "Unsupported story link", null)
-                        } else try { startActivity(Intent(Intent.ACTION_VIEW, uri)); result.success(null) }
+                        } else try { androidx.browser.customtabs.CustomTabsIntent.Builder()
+                            .setShowTitle(true)
+                            .setColorScheme(when (getPreferences(MODE_PRIVATE).getString("theme", "system")) {
+                                "dark" -> androidx.browser.customtabs.CustomTabsIntent.COLOR_SCHEME_DARK
+                                "light" -> androidx.browser.customtabs.CustomTabsIntent.COLOR_SCHEME_LIGHT
+                                else -> androidx.browser.customtabs.CustomTabsIntent.COLOR_SCHEME_SYSTEM
+                            })
+                            .build().launchUrl(this, uri)
+                            result.success(null) }
                         catch (_: Exception) { result.error("browser", "No browser is available to open this story", null) }
                     }
                     "websiteSessions" -> result.success(sessions?.status() ?: mapOf("ao3" to false, "ffn" to false))
@@ -71,10 +79,14 @@ class MainActivity : FlutterActivity() {
                             sessions!!.enable(site!!)
                             sessionBusy = true
                             loginResult = result
-                            login = SiteLoginDialog(this, site, {
+                            login = SiteLoginDialog(this, site, { verified ->
                                 login = null; sessionBusy = false
-                                loginResult?.success(null); loginResult = null
-                            }).also { it.open() }
+                                try {
+                                    if (verified) sessions!!.confirm(site)
+                                    loginResult?.success(verified)
+                                } catch (_: Exception) { loginResult?.error("session", "Could not save sign-in. Please try again.", null) }
+                                loginResult = null
+                            }, appearance = getPreferences(MODE_PRIVATE).getString("theme", "system") ?: "system").also { it.open() }
                         } catch (_: Exception) {
                             sessionBusy = false; loginResult = null
                             login?.dismiss(); login = null

@@ -149,12 +149,23 @@ motion skips the transition. Light and dark visual tests cover expansion and ris
 ### Website sessions on Android
 
 Open Settings → Website sessions → Archive of Our Own or FanFiction.net. Confirm
-the consent dialog, sign in on the official website in the visible WebView, then
-tap Done. The app enables session reuse when consent is given; closing sign-in
-keeps the website session. “Session enabled” is permission to reuse cookies, not
-a claim that login succeeded. Retry Add or Refresh after signing in. Expired
-sessions show a message directing you back to Settings. The 15-second scrape
-budget does not limit the time you can spend signing in.
+the consent sheet, then sign in on the official website. A Sailune-styled browser
+frame closes automatically after detecting signed-in account navigation and a
+stored cookie. Closing manually never reports success. “Sign-in saved” records
+the last successful check, not a guarantee against future expiry. Retry Add or
+Refresh after signing in. Expired sessions direct you back to Settings.
+
+The check reads only navigation links (AO3's header greeting/logout; FFN's
+account/logout navigation), never password fields or values. Cookie presence,
+page load, and redirects alone do not count. Detection is conservative and may
+need updating if a website changes; unrecognized pages remain open with Close
+available. Checks are local, bounded to two minutes per page, and released on
+close. The scrape timeout does not limit sign-in time.
+
+Story reading uses the default browser's Custom Tabs UI where supported, falling
+back to opening the browser. Login retains app-owned WebView storage because
+Custom Tabs cannot expose browser cookies to the scraper. Browser and app
+sessions are separate; no session is transferred to a desktop CLI.
 
 Android CookieManager owns app-private cookie persistence and enforces cookie
 path/domain matching, including HttpOnly cookies. The native/Go transport reuses
@@ -190,3 +201,12 @@ time. The tour never opens a website or grants session consent.
 Regenerate the bundled screenshots from the actual Flutter screens with:
 `flutter test --update-goldens tool/onboarding_screenshots.dart`.
 Only synthetic/empty library data is used.
+
+### App presentation
+
+Confirmation sheets and transient notices share Sailune's surface, typography,
+and rounded controls. Cold starts show the beach artwork, then a circular reveal
+shrinks into the measured library logo. It runs once per app instance, not on
+resume or appearance changes, and respects reduced motion. On a first launch
+without a library logo, the artwork fades into onboarding. Android's initial
+system launch screen still precedes Flutter's animation.
