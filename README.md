@@ -155,6 +155,13 @@ stored cookie. Closing manually never reports success. “Sign-in saved” recor
 the last successful check, not a guarantee against future expiry. Retry Add or
 Refresh after signing in. Expired sessions direct you back to Settings.
 
+FFN starts at its mobile login route, `https://m.fanfiction.net/m/login.php`.
+A login-page HTTP 404 or a rendered “404 / File Not Found” page triggers one
+retry of the desktop login route in desktop browser mode. It does not retry
+after a password form has been shown, repeat submissions, clear cookies, or
+treat errors as signed-in state. Direct live probes may still be blocked by
+FFN; automated recovery tests use controlled pages.
+
 The check reads only navigation links (AO3's header greeting/logout; FFN's
 account/logout navigation), never password fields or values. Cookie presence,
 page load, and redirects alone do not count. Detection is conservative and may

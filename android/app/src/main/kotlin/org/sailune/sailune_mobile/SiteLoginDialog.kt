@@ -32,6 +32,9 @@ internal class SiteLoginDialog(
     private var verified = false
     private var generation = 0
     private var checks = 0
+    private var desktopRetry = false
+    private var sawLoginForm = false
+    private var errorPage = false
     private fun dp(value: Int) = (value * context.resources.displayMetrics.density).toInt()
     init {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -116,13 +119,39 @@ internal class SiteLoginDialog(
             }
             override fun onPageStarted(v: WebView, url: String, icon: android.graphics.Bitmap?) {
                 generation++; handler.removeCallbacksAndMessages(null)
+                errorPage = false
                 if (WebsiteSessions.site(url) != site) { v.stopLoading(); return }
                 address.text = android.net.Uri.parse(url).host
             }
             override fun onPageFinished(v: WebView, url: String) {
                 if (WebsiteSessions.site(url) != site || disposed) return
-                checks = 0
-                checkSignIn(generation)
+                val page = generation
+                // FFN can serve its "Oops: File Not Found" page with HTTP 200.
+                v.evaluateJavascript("""(() => ({
+                    form: !!document.querySelector('input[type="password"]'),
+                    missing: /404/.test(document.title + ' ' + document.body.innerText.slice(0, 1500)) &&
+                      /file not found/i.test(document.title + ' ' + document.body.innerText.slice(0, 1500))
+                }))()""") { raw ->
+                    if (disposed || page != generation || v.url != url) return@evaluateJavascript
+                    val state = runCatching { org.json.JSONObject(raw) }.getOrNull()
+                    if (state?.optBoolean("form") == true) sawLoginForm = true
+                    if (state?.optBoolean("missing") == true) {
+                        errorPage = true
+                        if (!recoverFFN(url)) {
+                            note.visibility = View.VISIBLE
+                            note.text = "Sign-in is unavailable. Please try again later."
+                        }
+                        return@evaluateJavascript
+                    }
+                    if (!errorPage) { checks = 0; checkSignIn(page) }
+                }
+            }
+            override fun onReceivedHttpError(v: WebView, request: WebResourceRequest, response: WebResourceResponse) {
+                if (!request.isForMainFrame) return
+                errorPage = true
+                if (response.statusCode == 404 && request.method == "GET" && recoverFFN(request.url.toString())) return
+                note.visibility = View.VISIBLE
+                note.text = "Sign-in could not load (${response.statusCode}). Please try again later."
             }
             override fun onReceivedSslError(v: WebView, h: SslErrorHandler, e: android.net.http.SslError) {
                 h.cancel(); generation++; handler.removeCallbacksAndMessages(null)
@@ -132,6 +161,25 @@ internal class SiteLoginDialog(
             override fun onReceivedHttpAuthRequest(v: WebView, h: HttpAuthHandler, host: String, realm: String) { h.cancel() }
             override fun onRenderProcessGone(v: WebView, detail: RenderProcessGoneDetail): Boolean { dismiss(); return true }
         }
+    }
+
+    private fun recoverFFN(url: String): Boolean {
+        if (disposed || site != "ffn" || desktopRetry || sawLoginForm ||
+            !FFNLoginRoute.isLogin(url)) return false
+        desktopRetry = true
+        generation++
+        handler.removeCallbacksAndMessages(null)
+        web.stopLoading()
+        web.settings.apply {
+            userAgentString = FFNLoginRoute.desktopAgent(userAgentString)
+            useWideViewPort = true
+            loadWithOverviewMode = true
+            builtInZoomControls = true
+            displayZoomControls = false
+        }
+        // Defer navigation out of the current page callback. Never retry credentials.
+        handler.post { if (!disposed) web.loadUrl(FFNLoginRoute.desktopURL) }
+        return true
     }
 
     private fun checkSignIn(page: Int) {
@@ -182,11 +230,24 @@ internal object LoginEvidence {
     """.trimIndent() else """
         (() => {
           if (location.protocol !== 'https:' || !['fanfiction.net','www.fanfiction.net','m.fanfiction.net'].includes(location.hostname)) return false;
-          if (!/^\/(login.php|account(?:\/|$))/.test(location.pathname)) return false;
+          if (!/^\/(?:m\/)?(?:login\.php$|account(?:\.php$|\/|$))/.test(location.pathname)) return false;
           if (document.querySelector('input[type="password"]')) return false;
           const links = Array.from(document.querySelectorAll('a[href]')).map(a => new URL(a.href,location.href));
-          return links.some(u => u.origin === location.origin && ['/logout.php','/logout/'].includes(u.pathname)) &&
-            links.some(u => u.origin === location.origin && u.pathname.startsWith('/account/'));
+          return links.some(u => u.origin === location.origin && ['/logout.php','/logout/','/m/logout.php'].includes(u.pathname)) &&
+            links.some(u => u.origin === location.origin && (u.pathname.startsWith('/account/') || u.pathname === '/m/account.php'));
         })()
     """.trimIndent()
+}
+
+/** Explicit same-site routes, with a single browser desktop-mode fallback. */
+internal object FFNLoginRoute {
+    const val desktopURL = "https://www.fanfiction.net/login.php"
+    fun isLogin(url: String): Boolean {
+        val uri = android.net.Uri.parse(url)
+        return WebsiteSessions.site(url) == "ffn" && uri.path in setOf("/login.php", "/m/login.php")
+    }
+    fun desktopAgent(agent: String): String {
+        val engine = Regex("Chrome/[0-9.]+").find(agent)?.value ?: return agent
+        return "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) $engine Safari/537.36"
+    }
 }

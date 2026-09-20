@@ -18,7 +18,9 @@ internal class WebsiteSessions(context: Context) : WebsiteSession {
     private val cookies = CookieManager.getInstance()
     init { cookies.setAcceptCookie(true) }
     fun status() = listOf("ao3", "ffn").associateWith {
-        enabled(it) && preferences.getBoolean("$it-confirmed", false) && !cookies.getCookie(loginURL(it)).isNullOrBlank()
+        enabled(it) && preferences.getBoolean("$it-confirmed", false) &&
+            (listOf(loginURL(it)) + if (it == "ffn") listOf(FFNLoginRoute.desktopURL) else emptyList())
+                .any { url -> !cookies.getCookie(url).isNullOrBlank() }
     }
     fun confirm(site: String) {
         check(enabled(site))
@@ -73,7 +75,7 @@ internal class WebsiteSessions(context: Context) : WebsiteSession {
         }
         fun loginURL(site: String) = when (site) {
             "ao3" -> "https://archiveofourown.org/users/login"
-            "ffn" -> "https://www.fanfiction.net/login.php"
+            "ffn" -> "https://m.fanfiction.net/m/login.php"
             else -> throw IllegalArgumentException("Unsupported website")
         }
     }

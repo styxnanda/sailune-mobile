@@ -181,4 +181,56 @@ class WebsiteSessionsTest {
         } finally { scenario.close() }
     }
 
+    @Test fun ffnMobile404RetriesDesktopOnceAndDoesNotReportSuccess() {
+        val reached = CountDownLatch(1)
+        val closed = CountDownLatch(1)
+        val loaded = mutableListOf<String>()
+        var verified = true
+        lateinit var dialog: SiteLoginDialog
+        val scenario = ActivityScenario.launch(MainActivity::class.java)
+        try {
+            scenario.onActivity { activity ->
+                assertEquals("https://m.fanfiction.net/m/login.php", WebsiteSessions.loginURL("ffn"))
+                dialog = SiteLoginDialog(activity, "ffn", { success ->
+                    verified = success; closed.countDown()
+                }, {
+                    object: WebView(activity) {
+                        override fun loadUrl(u: String) {
+                            loaded.add(u)
+                            if (loaded.size == 2) {
+                                assertEquals(FFNLoginRoute.desktopURL, u)
+                                assertFalse(settings.userAgentString.contains("Android"))
+                                assertFalse(settings.userAgentString.contains("Mobile"))
+                                assertTrue(settings.userAgentString.contains("Chrome/"))
+                                reached.countDown()
+                            }
+                            // A second missing page must stay open, not form a retry loop.
+                            loadDataWithBaseURL(u, "<title>404</title><h1>Oops: File Not Found</h1>",
+                                "text/html", "UTF-8", u)
+                        }
+                    }
+                })
+                dialog.open()
+            }
+            assertTrue(reached.await(8, TimeUnit.SECONDS))
+            assertFalse(closed.await(2, TimeUnit.SECONDS))
+            scenario.onActivity {
+                assertEquals(2, loaded.size)
+                assertTrue(dialog.isShowing)
+                dialog.dismiss()
+            }
+            assertTrue(closed.await(3, TimeUnit.SECONDS))
+            assertFalse(verified)
+        } finally { scenario.close() }
+    }
+
+    @Test fun ffnRecoveryOnlyAcceptsExplicitSecureLoginRoutes() {
+        assertTrue(FFNLoginRoute.isLogin("https://m.fanfiction.net/m/login.php"))
+        assertTrue(FFNLoginRoute.isLogin("https://www.fanfiction.net/login.php"))
+        assertFalse(FFNLoginRoute.isLogin("https://www.fanfiction.net/s/123/1"))
+        assertFalse(FFNLoginRoute.isLogin("https://fanfiction.net.evil.test/login.php"))
+        assertFalse(FFNLoginRoute.isLogin("http://m.fanfiction.net/m/login.php"))
+        assertFalse(FFNLoginRoute.isLogin("https://m.fanfiction.net:8443/m/login.php"))
+    }
+
 }
