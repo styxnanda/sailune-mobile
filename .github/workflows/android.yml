@@ -2,6 +2,7 @@ name: Android
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 permissions:
@@ -19,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: styxnanda/sailune-go
-          ref: 84f0017bc00fc36d2666193d81b7d8a611331a18
+          ref: v0.9.0
           path: sailune-cli
       - uses: actions/setup-go@v5
         with:
@@ -47,7 +48,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: styxnanda/sailune-go
-          ref: 84f0017bc00fc36d2666193d81b7d8a611331a18
+          ref: v0.9.0
           path: sailune-cli
       - uses: actions/setup-go@v5
         with:
@@ -68,11 +69,11 @@ jobs:
           go install golang.org/x/mobile/cmd/gobind@v0.0.0-20260908204917-8b95e45f8d3e
           scripts/build-core.sh
       - run: flutter pub get
-      - run: flutter build apk --debug --target-platform android-arm64,android-x64
+      - run: flutter build apk --release --target lib/main.dart --target-platform android-arm64,android-x64
       - uses: actions/upload-artifact@v4
         with:
-          name: sailune-android-debug
-          path: sailune-mobile/build/app/outputs/flutter-apk/app-debug.apk
+          name: sailune-android-v0.9.0
+          path: sailune-mobile/build/app/outputs/flutter-apk/app-release.apk
       - name: Enable emulator acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -85,3 +86,25 @@ jobs:
           profile: pixel_6
           working-directory: sailune-mobile
           script: flutter test integration_test/library_test.dart -d emulator-5554
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [checks, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: sailune-android-v0.9.0
+          path: packages
+      - name: Publish Android release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          test "$GITHUB_REF_NAME" = v0.9.0
+          mv packages/app-release.apk packages/sailune-v0.9.0-android.apk
+          (cd packages && sha256sum *.apk > SHA256SUMS)
+          gh release create "$GITHUB_REF_NAME" packages/* --verify-tag --title "Sailune Android $GITHUB_REF_NAME" --notes-file docs/release-v0.9.0.md

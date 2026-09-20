@@ -35,3 +35,26 @@ The final app APK was installed and launched separately from the test harness on
 The revised interface passed 15 Flutter tests and static analysis. Tests cover the full-width Add story action, staged sheet transition, keyboard insets, offline saving, retention of form values after cancellation, all five fading messages, the 15-second timeout, network-error dismissal, and the save-versus-cancel race. Updated light/dark cards, the expanded button, the raised form, and the centered scraping dialog were rendered and visually reviewed.
 
 The mobile Go facade passed race tests and vet, including cancellation before worker startup, request cleanup, the 15-second context deadline, and rejection of metadata arriving after cancellation. Android's real bridge/SQLite integration test passed after rebuilding the native AAR with `Prepare` registration. The final normal application APK was rebuilt separately from the integration-test harness.
+
+## v0.9.0 APK entry points
+
+`flutter test integration_test/...` replaces `app-debug.apk` with a test runner.
+That file is not an installable user build and can display a blank screen when
+launched normally. After integration tests, run `scripts/build-release.sh`, which
+explicitly builds `lib/main.dart` and copies the APK to
+`build/releases/sailune-v0.9.0-android.apk`. Distribute only that file or the
+release workflow artifact. Always cold-launch the actual application APK as a
+separate smoke test.
+
+## v0.9.0 validation
+
+- Flutter analysis and 43 widget tests pass, including reviewed light/dark artwork
+  goldens, collection deletion without story deletion, and narrow/large-text cards.
+- The real Android integration test verifies manual membership, image upload and
+  byte retrieval, ZIP export/merge, and persisted appearance settings. Import
+  staging uses app-private library storage rather than Go's Android temp default.
+- Go facade race tests and vet pass. Native Android debug build and cold-launch
+  onboarding/library interaction were verified on an ARM64 emulator.
+- Integration-test APKs are not distributable app builds; see the entry-point
+  warning above. Physical-device performance and production signing remain
+  outside the automated emulator evidence.

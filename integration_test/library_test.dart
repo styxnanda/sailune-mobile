@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -60,6 +62,79 @@ void main() {
         }),
         throwsException,
       );
+      final collection = await organize(reopened, {
+        'action': 'collection-save',
+        'collection': {
+          'name': 'Integration $identity',
+          'kind': 'manual',
+          'rules': {},
+        },
+      }) as Map;
+      final temp = await Directory.systemTemp.createTemp('sailune-v090-test-');
+      try {
+        await organize(reopened, {
+          'action': 'membership',
+          'collection_id': collection['id'],
+          'ids': [id],
+          'remove': false,
+        });
+        expect(
+          await organize(reopened, {
+            'action': 'count',
+            'filter': {'Collection': collection['id']},
+          }),
+          1,
+        );
+        final recorder = ui.PictureRecorder();
+        final canvas = ui.Canvas(recorder);
+        canvas.drawColor(const ui.Color(0xff607080), ui.BlendMode.src);
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(120, 180);
+        final png = await image.toByteData(format: ui.ImageByteFormat.png);
+        image.dispose();
+        picture.dispose();
+        final imageFile = File('${temp.path}/cover.png');
+        await imageFile.writeAsBytes(png!.buffer.asUint8List());
+        final art = await organize(reopened, {
+          'action': 'artwork-set',
+          'id': id,
+          'role': 'cover',
+          'path': imageFile.path,
+          'x': 0.5,
+          'y': 0.5,
+        }) as Map;
+        final bytes = await reopened.device('artworkData', {
+          'asset': art['asset_id'],
+          'small': true,
+        });
+        expect(bytes, isNotEmpty);
+        final backup = '${temp.path}/library.zip';
+        await organize(reopened, {'action': 'backup-export', 'path': backup});
+        expect(await File(backup).length(), greaterThan(100));
+        final imported = await organize(reopened, {
+          'action': 'backup-import',
+          'path': backup,
+          'merge': true,
+        }) as Map;
+        expect(imported['imported'], 0);
+        await reopened.device('saveArtworkPreferences', {
+          'mode': 'portrait',
+          'details': false,
+        });
+        final prefs = await reopened.device('loadArtworkPreferences') as Map;
+        expect(prefs['mode'], 'portrait');
+        expect(prefs['details'], false);
+        await reopened.device('saveArtworkPreferences', {
+          'mode': 'hidden',
+          'details': true,
+        });
+      } finally {
+        await organize(reopened, {
+          'action': 'collection-delete',
+          'collection_id': collection['id'],
+        });
+        await temp.delete(recursive: true);
+      }
       await reopened.saveTheme('dark');
       expect(await reopened.loadTheme(), 'dark');
       await reopened.saveTheme('system');

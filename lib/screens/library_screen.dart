@@ -10,6 +10,7 @@ import '../widgets/story_card.dart';
 import 'add_story_sheet.dart';
 import 'story_screen.dart';
 import 'settings_screen.dart';
+import 'collections_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   final Library library;
@@ -33,6 +34,8 @@ class _LibraryScreenState extends State<LibraryScreen>
   final _scroll = ScrollController();
   final _saving = <int>{};
   List<Story> _stories = [];
+  String _collection = '', _coverMode = 'hidden';
+  List<Map<String, dynamic>> _collections = [];
   String _shelf = '', _site = '', _sort = 'added';
   bool _unread = false, _loading = true, _more = false;
   String? _error;
@@ -66,7 +69,17 @@ class _LibraryScreenState extends State<LibraryScreen>
       _error = null;
     });
     try {
+      final prefs =
+          await widget.library.device('loadArtworkPreferences') as Map;
+      final collections = (await organize(widget.library, {
+        'action': 'collections',
+      }) as List).map((c) => Map<String, dynamic>.from(c as Map)).toList();
+      if (_collection.isNotEmpty &&
+          !collections.any((c) => c['id'] == _collection)) {
+        _collection = '';
+      }
       final rows = await listStories(widget.library, {
+        'Collection': _collection,
         'Query': _search.text.trim(),
         'Status': _shelf,
         'Site': _site,
@@ -78,6 +91,8 @@ class _LibraryScreenState extends State<LibraryScreen>
       });
       if (!mounted || generation != _generation) return;
       setState(() {
+        _coverMode = prefs['mode'] as String? ?? 'hidden';
+        _collections = collections;
         _stories = append ? [..._stories, ...rows] : rows;
         _more = rows.length == 40;
         _loading = false;
@@ -120,6 +135,7 @@ class _LibraryScreenState extends State<LibraryScreen>
               .toList(),
         );
       }
+      if (_collection.isNotEmpty && mounted) await _load();
       return true;
     } catch (e) {
       _message(errorMessage(e));
@@ -451,6 +467,53 @@ class _LibraryScreenState extends State<LibraryScreen>
                               ),
                             ],
                           ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: _collection,
+                                    isExpanded: true,
+                                    items: [
+                                      const DropdownMenuItem(
+                                        value: '',
+                                        child: Text('All collections'),
+                                      ),
+                                      for (final c in _collections)
+                                        DropdownMenuItem(
+                                          value: c['id'] as String,
+                                          child: Text(
+                                            '${c['name']} · ${c['count']}',
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                    ],
+                                    onChanged: (v) {
+                                      setState(() => _collection = v!);
+                                      _load();
+                                    },
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Manage collections',
+                                icon: const Icon(
+                                  Icons.collections_bookmark_outlined,
+                                ),
+                                onPressed: () async {
+                                  await Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => CollectionsScreen(
+                                        library: widget.library,
+                                      ),
+                                    ),
+                                  );
+                                  if (mounted) await _load();
+                                },
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 12),
                         ],
                       ),
@@ -525,6 +588,9 @@ class _LibraryScreenState extends State<LibraryScreen>
                         return StoryCard(
                           key: ValueKey(story.id),
                           story: story,
+                          library: widget.library,
+                          coverMode: _coverMode,
+                          artRevision: _generation,
                           onOpen: () => _open(story),
                           onDelete: _saving.contains(story.id)
                               ? null

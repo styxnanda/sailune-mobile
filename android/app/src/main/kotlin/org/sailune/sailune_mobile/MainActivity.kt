@@ -126,6 +126,29 @@ class MainActivity : FlutterActivity() {
                             null
                         }
                     }
+                    "loadArtworkPreferences" -> result.success(mapOf("mode" to getPreferences(MODE_PRIVATE).getString("coverMode", "hidden"), "details" to getPreferences(MODE_PRIVATE).getBoolean("detailArt", true)))
+                    "saveArtworkPreferences" -> {
+                        val mode = call.argument<String>("mode") ?: "hidden"
+                        if (mode !in setOf("hidden", "portrait", "background")) result.error("appearance", "Invalid cover mode", null)
+                        else background(result) { check(getPreferences(MODE_PRIVATE).edit().putString("coverMode", mode).putBoolean("detailArt", call.argument<Boolean>("details") ?: true).commit()); null }
+                    }
+                    "artworkData" -> background(result) { client.artworkData(call.argument<String>("asset") ?: "", call.argument<Boolean>("small") ?: true) }
+                    "previewArtwork" -> background(result) { client.previewArtwork(checkedImagePath(call.argument<String>("path") ?: ""), call.argument<String>("role") ?: "cover", call.argument<Double>("x") ?: 0.5, call.argument<Double>("y") ?: 0.5) }
+                    "discardImage" -> background(result) { java.io.File(checkedImagePath(call.arguments as? String ?: "")).delete(); null }
+                    "pickImage", "exportArchive", "importArchive" -> {
+                        if (pendingDocument != null) result.error("busy", "A file picker is already open", null)
+                        else {
+                            val code = when(call.method) { "pickImage" -> 712; "exportArchive" -> 713; else -> 714 }
+                            val intent = Intent(if (code == 713) Intent.ACTION_CREATE_DOCUMENT else Intent.ACTION_OPEN_DOCUMENT).apply {
+                                addCategory(Intent.CATEGORY_OPENABLE)
+                                type = if (code == 712) "image/*" else if (code == 713) "application/zip" else "*/*"
+                                if (code == 712) putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("image/jpeg", "image/png"))
+                                if (code == 713) putExtra(Intent.EXTRA_TITLE, "sailune-${System.currentTimeMillis()}.zip")
+                            }
+                            pendingDocument = result
+                            try { startActivityForResult(intent, code) } catch (_: Exception) { pendingDocument = null; result.error("files", "No document picker is available", null) }
+                        }
+                    }
                     "saveBackup", "pickBackup" -> {
                         if (pendingDocument != null) { result.error("busy", "A file picker is already open", null) }
                         else {
@@ -152,6 +175,12 @@ class MainActivity : FlutterActivity() {
             }
     }
 
+    private fun checkedImagePath(path: String): String {
+        val file = java.io.File(path).canonicalFile
+        check(file.parentFile == cacheDir.canonicalFile && file.name.startsWith("sailune-image-")) { "Invalid artwork selection" }
+        return file.absolutePath
+    }
+
     private fun background(result: MethodChannel.Result, work: () -> Any?) {
         workers.execute {
             try { val value = work(); runOnUiThread { result.success(value) } }
@@ -162,13 +191,36 @@ class MainActivity : FlutterActivity() {
     @Deprecated("Android activity result compatibility with FlutterActivity")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode != 710 && requestCode != 711) return
+        if (requestCode !in 710..714) return
         val result = pendingDocument ?: return
         val snapshot = exportData
         pendingDocument = null; exportData = null
         val uri = data?.data
         if (resultCode != Activity.RESULT_OK || uri == null) {
-            result.success(if (requestCode == 710) false else null); return
+            result.success(if (requestCode == 710 || requestCode == 713) false else null); return
+        }
+        if (requestCode in 712..714) {
+            background(result) {
+                val temp = java.io.File.createTempFile(if (requestCode == 712) "sailune-image-" else "sailune-backup-", ".tmp", cacheDir)
+                var keep = false
+                try {
+                    if (requestCode == 713) {
+                        // Core publishes a completed archive without overwriting an existing file.
+                        check(temp.delete())
+                        client.exportBackup(temp.absolutePath)
+                        contentResolver.openOutputStream(uri, "wt")?.use { out -> temp.inputStream().use { it.copyTo(out) } } ?: error("Could not write backup")
+                        true
+                    } else {
+                        val limit = if (requestCode == 712) 25L * 1024 * 1024 else 512L * 1024 * 1024
+                        contentResolver.openInputStream(uri)?.use { input -> temp.outputStream().use { out ->
+                            val buffer = ByteArray(65536); var size = 0L
+                            while (true) { val n = input.read(buffer); if (n < 0) break; size += n; check(size <= limit) { "Selected file exceeds ${limit / 1024 / 1024} MiB" }; out.write(buffer, 0, n) }
+                        } } ?: error("Could not read selected file")
+                        if (requestCode == 712) { keep = true; temp.absolutePath } else client.importBackup(temp.absolutePath)
+                    }
+                } finally { if (!keep) temp.delete() }
+            }
+            return
         }
         background(result) {
             if (requestCode == 710) {

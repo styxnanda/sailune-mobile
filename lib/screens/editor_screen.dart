@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/library.dart';
 import '../models/story.dart';
 import '../widgets/scrape_task.dart';
+import 'artwork_screen.dart';
 
 class EditorScreen extends StatefulWidget {
   final Library library;
@@ -141,6 +142,23 @@ class _EditorScreenState extends State<EditorScreen> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [
+                  if (widget.story != null)
+                    OutlinedButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () => Navigator.push(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (_) => ArtworkScreen(
+                                  library: widget.library,
+                                  story: widget.story!,
+                                ),
+                              ),
+                            ),
+                      icon: const Icon(Icons.image_outlined),
+                      label: const Text('Edit cover and background'),
+                    ),
+
                   if (widget.story == null) ...[
                     TextFormField(
                       controller: _url,

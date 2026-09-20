@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import '../data/library.dart';
@@ -20,6 +22,8 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late String _theme;
+  String _coverMode = 'hidden';
+  bool _detailArt = true;
   bool _busy = false;
   String? _message;
   Map<String, bool> _sessions = {};
@@ -29,6 +33,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _theme = widget.theme;
     _loadSessions();
+    _loadArtwork();
+  }
+
+  Future<void> _loadArtwork() async {
+    try {
+      final p = await widget.library.device('loadArtworkPreferences') as Map;
+      if (mounted) {
+        setState(() {
+          _coverMode = p['mode'] as String? ?? 'hidden';
+          _detailArt = p['details'] != false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _message = errorMessage(e));
+    }
+  }
+
+  Future<String?> _saveArtwork(String mode, bool details) async {
+    await widget.library.device('saveArtworkPreferences', {
+      'mode': mode,
+      'details': details,
+    });
+    if (mounted) {
+      setState(() {
+        _coverMode = mode;
+        _detailArt = details;
+      });
+    }
+    return null;
   }
 
   Future<void> _loadSessions() async {
@@ -137,6 +170,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 32),
+              DropdownButtonFormField<String>(
+                initialValue: _coverMode,
+                key: ValueKey(_coverMode),
+                decoration: const InputDecoration(
+                  labelText: 'Library cover appearance',
+                ),
+                isExpanded: true,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'hidden',
+                    child: Text('Hidden · minimal cards'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'portrait',
+                    child: Text('Portrait · cover on the left'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'background',
+                    child: Text('Background · translucent cards'),
+                  ),
+                ],
+                onChanged: _busy
+                    ? null
+                    : (v) => _run(() => _saveArtwork(v!, _detailArt)),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Show artwork in story details'),
+                subtitle: const Text(
+                  'Hidden artwork stays saved on your stories.',
+                ),
+                value: _detailArt,
+                onChanged: _busy
+                    ? null
+                    : (v) => _run(() => _saveArtwork(_coverMode, v)),
+              ),
+              const SizedBox(height: 24),
               Text(
                 'Website sessions',
                 style: Theme.of(context).textTheme.titleLarge,
@@ -180,13 +250,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       minVerticalPadding: 18,
                       leading: const Icon(Icons.file_upload_outlined),
                       title: const Text('Save a backup'),
+                      subtitle: const Text(
+                        'Stories, collections, and artwork in one ZIP.',
+                      ),
                       onTap: _busy
                           ? null
                           : () => _run(() async {
-                              final data = await widget.library.call({
-                                'op': 'export',
-                              }) as String;
-                              return await widget.library.saveBackup(data)
+                              return await widget.library.device(
+                                        'exportArchive',
+                                      ) ==
+                                      true
                                   ? 'Backup saved'
                                   : null;
                             }),
@@ -195,17 +268,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ListTile(
                       minVerticalPadding: 18,
                       leading: const Icon(Icons.file_download_outlined),
-                      title: const Text('Import a collection'),
+                      title: const Text('Import a backup'),
+                      subtitle: const Text(
+                        'Existing notes, artwork, and rules are kept. Missing artwork and memberships are added.',
+                      ),
                       onTap: _busy
                           ? null
                           : () => _run(() async {
-                              final data = await widget.library.pickBackup();
+                              final data = await widget.library.device(
+                                'importArchive',
+                              ) as String?;
                               if (data == null) return null;
-                              final result = await widget.library.call({
-                                'op': 'import',
-                                'snapshot': data,
-                              }) as Map;
-                              return '${result['imported']} imported · ${result['skipped']} already in your library';
+                              final result = jsonDecode(data) as Map;
+                              return '${result['imported']} stories added · ${result['skipped']} existing · ${result['collections'] ?? 0} collections · ${result['artwork'] ?? 0} artworks · ${result['conflicts'] ?? 0} conflicts retained';
                             }),
                     ),
                   ],
@@ -236,14 +311,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'SAILUNE  /  0.1.0',
+                'SAILUNE  /  0.9.0',
                 style: TextStyle(fontSize: 11, letterSpacing: 1.4),
               ),
               TextButton(
                 onPressed: () => showLicensePage(
                   context: context,
                   applicationName: 'Sailune',
-                  applicationVersion: '0.1.0',
+                  applicationVersion: '0.9.0',
                   applicationLegalese: 'GPL-3.0 · Shared Sailune-Go core',
                 ),
                 child: const Text('Open-source licenses'),

@@ -53,6 +53,11 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('The quiet between the stars'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Read next chapter'),
+      250,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Read next chapter'));
     await tester.pumpAndSettle();
     expect(library.links.single, endsWith('/8'));

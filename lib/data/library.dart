@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../models/story.dart';
 
 abstract class Library {
+  Future<dynamic> device(String method, [dynamic arguments]);
   Future<dynamic> call(Map<String, dynamic> request, {String? requestId});
   Future<void> cancel(String requestId);
   Future<void> openLink(String url);
@@ -20,6 +21,9 @@ abstract class Library {
 }
 
 class AndroidLibrary implements Library {
+  @override
+  Future<dynamic> device(String method, [dynamic arguments]) =>
+      channel.invokeMethod(method, arguments);
   static const channel = MethodChannel('org.sailune.mobile/library');
   int _sequence = 0;
   @override
@@ -91,3 +95,6 @@ Future<List<Story>> listStories(
 ) async => (await library.call({'op': 'list', 'filter': filter}) as List)
     .map((e) => Story(Map<String, dynamic>.from(e as Map)))
     .toList();
+
+Future<dynamic> organize(Library library, Map<String, dynamic> feature) =>
+    library.call({'op': 'organize', 'feature': feature});

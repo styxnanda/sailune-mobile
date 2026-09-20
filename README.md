@@ -236,3 +236,17 @@ To read → Reading → Completed → On hold → Dropped. Only the fold twists;
 short/cancelled drags do not save. Failed writes keep the prior status. Screen
 readers can use the fold's increase/decrease actions, and reduced motion disables
 the twist. Active shelf filters are respected when status changes.
+
+
+## v0.9.0 — collections and artwork
+
+See [release and upgrade notes](docs/release-v0.9.0.md). Create manual collections
+or automatic tag-based collections through **Manage collections** in the library.
+Each story can have a portrait cover and a separate horizontal background.
+Settings provides portrait, background, and hidden library appearances plus an
+independent detail-artwork toggle. Default cards remain minimal.
+
+Complete ZIP backups include collections and images. Importing preserves existing
+personal data and images, fills missing artwork slots, and adds memberships.
+Legacy JSON backups remain importable. Back up before the schema-2 upgrade;
+older binaries cannot open the migrated library. Cloud sync is not included.

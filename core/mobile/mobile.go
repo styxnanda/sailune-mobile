@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -36,14 +37,15 @@ func NewClient(path string) (*Client, error) {
 }
 
 type request struct {
-	Op       string           `json:"op"`
-	ID       int64            `json:"id"`
-	Filter   sailune.Filter   `json:"filter"`
-	Bookmark sailune.Bookmark `json:"bookmark"`
-	Patch    sailune.Patch    `json:"patch"`
-	Fetch    bool             `json:"fetch"`
-	Chapter  int              `json:"chapter"`
-	Snapshot string           `json:"snapshot"`
+	Feature  sailune.OrganizeRequest `json:"feature"`
+	Op       string                  `json:"op"`
+	ID       int64                   `json:"id"`
+	Filter   sailune.Filter          `json:"filter"`
+	Bookmark sailune.Bookmark        `json:"bookmark"`
+	Patch    sailune.Patch           `json:"patch"`
+	Fetch    bool                    `json:"fetch"`
+	Chapter  int                     `json:"chapter"`
+	Snapshot string                  `json:"snapshot"`
 }
 
 type story struct {
@@ -95,6 +97,8 @@ func (c *Client) Call(requestID, payload string) (string, error) {
 	var value any
 	var err error
 	switch r.Op {
+	case "organize":
+		value, err = c.library.Organize(r.Feature)
 	case "list":
 		if r.Filter.Limit <= 0 || r.Filter.Limit > 100 {
 			r.Filter.Limit = 40
@@ -209,4 +213,27 @@ func (f deadlineFetcher) Fetch(ctx context.Context, url string) (sailune.Metadat
 		return sailune.Metadata{}, ctx.Err()
 	}
 	return metadata, err
+}
+
+// ArtworkData transfers one bounded asset independently of JSON story lists.
+func (c *Client) ArtworkData(asset string, thumbnail bool) ([]byte, error) {
+	return c.library.ArtworkBytes(asset, thumbnail)
+}
+func (c *Client) ExportBackup(path string) error { return c.library.ExportArchiveFile(path) }
+func (c *Client) ImportBackup(path string) (string, error) {
+	v, err := c.library.ImportBackupFile(path, true)
+	if err != nil {
+		return "", err
+	}
+	data, err := json.Marshal(v)
+	return string(data), err
+}
+
+func (c *Client) PreviewArtwork(path, role string, x, y float64) ([]byte, error) {
+	f, e := os.Open(path)
+	if e != nil {
+		return nil, e
+	}
+	defer f.Close()
+	return sailune.PreviewArtwork(f, role, x, y)
 }

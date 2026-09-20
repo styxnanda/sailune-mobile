@@ -6,6 +6,9 @@ import '../widgets/app_feedback.dart';
 import '../models/story.dart';
 import '../widgets/scrape_task.dart';
 import 'editor_screen.dart';
+import 'artwork_screen.dart';
+import 'collections_screen.dart';
+import '../widgets/artwork.dart';
 
 class StoryScreen extends StatefulWidget {
   final Library library;
@@ -17,7 +20,8 @@ class StoryScreen extends StatefulWidget {
 
 class _StoryScreenState extends State<StoryScreen> {
   late Story _story;
-  bool _busy = false;
+  bool _busy = false, _detailArt = true;
+  int _artRevision = 0;
   String? _error;
   late final ScrapeTask _scrape;
   @override
@@ -25,6 +29,14 @@ class _StoryScreenState extends State<StoryScreen> {
     super.initState();
     _scrape = ScrapeTask(widget.library);
     _story = widget.initial;
+    _loadArtworkPreference();
+  }
+
+  Future<void> _loadArtworkPreference() async {
+    try {
+      final p = await widget.library.device('loadArtworkPreferences') as Map;
+      if (mounted) setState(() => _detailArt = p['details'] != false);
+    } catch (_) {}
   }
 
   @override
@@ -114,6 +126,13 @@ class _StoryScreenState extends State<StoryScreen> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
               children: [
+                if (_detailArt)
+                  StoryArtHeader(
+                    library: widget.library,
+                    id: _story.id,
+                    site: _story.site,
+                    revision: _artRevision,
+                  ),
                 Text(
                   '${_story.site}  ·  ${shelves[_story.status]}',
                   style: TextStyle(
@@ -135,6 +154,46 @@ class _StoryScreenState extends State<StoryScreen> {
                     color: colors.onSurfaceVariant,
                     fontSize: 16,
                   ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _busy
+                      ? null
+                      : () => _run(
+                          () => _open(_story.caughtUp ? 'open' : 'resume'),
+                        ),
+                  icon: const Icon(Icons.auto_stories_outlined),
+                  label: Text(
+                    _story.caughtUp ? 'Read again' : 'Read next chapter',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: () =>
+                          assignCollection(context, widget.library, _story.id),
+                      icon: const Icon(Icons.collections_bookmark_outlined),
+                      label: const Text('Add to collection'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (_) => ArtworkScreen(
+                              library: widget.library,
+                              story: _story,
+                            ),
+                          ),
+                        );
+                        if (mounted) setState(() => _artRevision++);
+                      },
+                      icon: const Icon(Icons.image_outlined),
+                      label: const Text('Artwork'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 24),
                 if (_story.fandoms.isNotEmpty) ...[
@@ -169,17 +228,6 @@ class _StoryScreenState extends State<StoryScreen> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                FilledButton.icon(
-                  onPressed: _busy
-                      ? null
-                      : () => _run(
-                          () => _open(_story.caughtUp ? 'open' : 'resume'),
-                        ),
-                  icon: const Icon(Icons.auto_stories_outlined),
-                  label: Text(
-                    _story.caughtUp ? 'Read again' : 'Read next chapter',
-                  ),
-                ),
                 const SizedBox(height: 28),
                 Card(
                   child: Padding(

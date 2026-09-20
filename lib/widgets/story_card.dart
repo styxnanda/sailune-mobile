@@ -4,9 +4,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../models/story.dart';
 import 'chapter_actions.dart';
 import 'status_fold.dart';
+import '../data/library.dart';
+import 'artwork.dart';
 
 class StoryCard extends StatelessWidget {
   final Story story;
+  final Library? library;
+  final String coverMode;
+  final int artRevision;
   final VoidCallback onOpen;
   final ValueChanged<int>? onProgress;
   final Future<void> Function(bool copy)? onChapter;
@@ -15,6 +20,9 @@ class StoryCard extends StatelessWidget {
   const StoryCard({
     super.key,
     required this.story,
+    this.library,
+    this.coverMode = 'hidden',
+    this.artRevision = 0,
     required this.onOpen,
     this.onProgress,
     this.onChapter,
@@ -24,29 +32,78 @@ class StoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final sidePortrait =
+        coverMode == 'portrait' &&
+        MediaQuery.textScalerOf(context).scale(14) < 20;
     return GestureDetector(
       onLongPress: onDelete,
       child: Card(
         clipBehavior: Clip.antiAlias,
         child: Stack(
           children: [
-            Positioned(
-              right: -28,
-              bottom: -36,
-              width: 182,
-              height: 182,
-              child: _SiteWatermark(site: story.site),
-            ),
+            if (coverMode == 'background' && library != null)
+              Positioned.fill(
+                child: StoryArtwork(
+                  library: library!,
+                  id: story.id,
+                  site: story.site,
+                  role: 'background',
+                  faded: true,
+                  revision: artRevision,
+                ),
+              ),
+            if (coverMode == 'hidden')
+              Positioned(
+                right: -28,
+                bottom: -36,
+                width: 182,
+                height: 182,
+                child: _SiteWatermark(site: story.site),
+              ),
+            if (sidePortrait && library != null)
+              Positioned(
+                left: 18,
+                top: 20,
+                width: 64,
+                height: 96,
+                child: StoryArtwork(
+                  library: library!,
+                  id: story.id,
+                  site: story.site,
+                  revision: artRevision,
+                ),
+              ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                if (coverMode == 'portrait' && !sidePortrait && library != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20),
+                    child: Center(
+                      child: SizedBox(
+                        width: 80,
+                        height: 120,
+                        child: StoryArtwork(
+                          library: library!,
+                          id: story.id,
+                          site: story.site,
+                          revision: artRevision,
+                        ),
+                      ),
+                    ),
+                  ),
                 Semantics(
                   label:
                       '${story.site} story, ${shelves[story.status] ?? story.status}',
                   child: InkWell(
                     onTap: onOpen,
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(22, 20, 22, 8),
+                      padding: EdgeInsets.fromLTRB(
+                        sidePortrait ? 98 : 22,
+                        20,
+                        22,
+                        8,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

@@ -20,6 +20,15 @@ Map<String, dynamic> sample({int id = 1}) => {
 };
 
 class FakeLibrary implements Library {
+  @override
+  Future<dynamic> device(String method, [dynamic arguments]) async {
+    if (method == 'loadArtworkPreferences') {
+      return {'mode': 'hidden', 'details': true};
+    }
+    if (method == 'saveArtworkPreferences') return null;
+    return null;
+  }
+
   bool onboarded = true;
   @override
   Future<bool> loadOnboarding() async => onboarded;
@@ -60,6 +69,10 @@ class FakeLibrary implements Library {
   }) async {
     requests.add(request);
     switch (request['op']) {
+      case 'organize':
+        final f = request['feature'] as Map;
+        if (f['action'] == 'count') return rows.length;
+        return <dynamic>[];
       case 'list':
         if (failList) throw Exception('Library unavailable');
         final f = request['filter'] as Map;

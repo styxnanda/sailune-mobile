@@ -2,7 +2,7 @@ module github.com/styxnanda/sailune-mobile/core
 
 go 1.26.0
 
-require github.com/styxnanda/sailune-go v0.0.0-20260919124210-84f0017bc00f
+require github.com/styxnanda/sailune-go v0.9.0
 
 require (
 	github.com/danieljoos/wincred v1.2.3 // indirect

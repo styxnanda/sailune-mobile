@@ -156,7 +156,7 @@ void main() {
     final library = FakeLibrary(rows: [sample()]);
     await tester.pumpWidget(SailuneApp(library: library));
     await tester.pumpAndSettle();
-    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.tap(find.byType(DropdownButton<String>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Reading').last);
     await tester.pumpAndSettle();
