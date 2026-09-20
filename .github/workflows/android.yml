@@ -33,7 +33,24 @@ jobs:
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed lib test integration_test
       - run: flutter analyze
-      - run: flutter test
+      - name: Run widget and visual tests
+        run: |
+          set -o pipefail
+          flutter test --reporter expanded 2>&1 | tee "$RUNNER_TEMP/flutter-tests.log"
+      - name: Report test failure details
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import os, pathlib
+          path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'flutter-tests.log'
+          if path.exists():
+              lines = path.read_text().splitlines()
+              for i, line in enumerate(lines):
+                  if any(word in line for word in ['EXCEPTION CAUGHT', 'pixels', 'Expected:', 'Actual:', 'Test failed.', 'test description was:']):
+                      detail = '\n'.join(lines[max(0, i-1):i+4])
+                      detail = detail.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+                      print('::error::' + detail)
+          PY
       - run: go -C core test -race ./...
       - run: go -C core vet ./...
   android:
@@ -63,6 +80,8 @@ jobs:
           flutter-version: '3.47.4'
           cache: true
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358'
       - run: |
           go install golang.org/x/mobile/cmd/gomobile@v0.0.0-20260908204917-8b95e45f8d3e
