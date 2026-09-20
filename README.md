@@ -168,8 +168,11 @@ disabled. A completed CAPTCHA or verification cookie is not proof of login;
 the account navigation check still has to succeed. This addresses a browser
 compatibility restriction, not a verified cure for FFN's live login failures.
 
-The check reads only navigation links (AO3's header greeting/logout; FFN's
-account/logout navigation), never password fields or values. Cookie presence,
+The check reads only navigation (AO3's header greeting/logout; FFN's
+account/logout links or its mobile profile and account/logout dropdown), never
+password fields or values. FFN's `/m/acct.php` dropdown structure was verified
+against a real signed-in account; automated fixtures use synthetic identities.
+Cookie presence,
 page load, and redirects alone do not count. Detection is conservative and may
 need updating if a website changes; unrecognized pages remain open with Close
 available. Checks are local, bounded to two minutes per page, and released on

@@ -233,8 +233,23 @@ internal object LoginEvidence {
     """.trimIndent() else """
         (() => {
           if (location.protocol !== 'https:' || !['fanfiction.net','www.fanfiction.net','m.fanfiction.net'].includes(location.hostname)) return false;
-          if (!/^\/(?:m\/)?(?:login\.php$|account(?:\.php$|\/|$))/.test(location.pathname)) return false;
           if (document.querySelector('input[type="password"]')) return false;
+          // FFN's mobile account page is /m/acct.php, with navigation in a
+          // dropdown rather than account/logout anchors. Require both that
+          // menu and the signed-in profile; the route alone is not evidence.
+          if (location.pathname === '/m/acct.php') {
+            const nav = document.querySelector('form#m_top');
+            if (!nav) return false;
+            const profile = Array.from(nav.querySelectorAll('a[href]')).some(a => {
+              const u = new URL(a.href, location.href);
+              return u.origin === location.origin && /^\/u\/[0-9]+\/$/.test(u.pathname);
+            });
+            const destinations = Array.from(nav.querySelectorAll('select[name="dest"] option[value]'))
+              .map(o => new URL(o.value, location.href));
+            return profile && ['/m/acct.php', '/m/logout.php'].every(path =>
+              destinations.some(u => u.origin === location.origin && u.pathname === path));
+          }
+          if (!/^\/(?:m\/)?(?:login\.php$|account(?:\.php$|\/|$))/.test(location.pathname)) return false;
           const links = Array.from(document.querySelectorAll('a[href]')).map(a => new URL(a.href,location.href));
           return links.some(u => u.origin === location.origin && ['/logout.php','/logout/','/m/logout.php'].includes(u.pathname)) &&
             links.some(u => u.origin === location.origin && (u.pathname.startsWith('/account/') || u.pathname === '/m/account.php'));

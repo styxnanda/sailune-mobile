@@ -116,6 +116,24 @@ class WebsiteSessionsTest {
     }
 
     @Test fun ffnAccountNavigationClosesAutomatically() {
+        assertFFNAccountCloses("https://www.fanfiction.net/account/",
+            "<nav><a href='/account/profile.php'>Account</a><a href='/logout.php'>Log out</a></nav>")
+    }
+
+    // Structure observed after a real FFN mobile sign-in; all identity data is synthetic.
+    private val mobileAccountURL = "https://m.fanfiction.net/m/acct.php"
+    private val mobileAccountNav = """<form name="m_top" id="m_top" class="drop_m">
+        <a href="/u/123/">Fixture reader</a>:
+        <select name="dest"><option value="/m/acct.php">Account</option>
+        <option value="/m/logout.php">Log Off</option>
+        <option value="/m/pm2/inbox.php">PM Inbox</option></select>
+        <input type="button" value="Go"></form>"""
+
+    @Test fun realMobileAccountMenuClosesAndPersistsSession() {
+        assertFFNAccountCloses(mobileAccountURL, mobileAccountNav)
+    }
+
+    private fun assertFFNAccountCloses(accountURL: String, navigation: String) {
         val closed = CountDownLatch(1)
         var confirmed = false
         var destroyed = false
@@ -134,9 +152,9 @@ class WebsiteSessionsTest {
                 }, {
                     object: WebView(activity) {
                         override fun loadUrl(u: String) {
-                            loadDataWithBaseURL(u,
-                                "<nav><a href='/account/profile.php'>Account</a><a href='/logout.php'>Log out</a></nav><script>document.cookie='sailune_login=SYNTHETIC; Path=/; Secure';</script>",
-                                "text/html", "UTF-8", u)
+                            loadDataWithBaseURL(accountURL,
+                                navigation + "<script>document.cookie='sailune_login=SYNTHETIC; Path=/; Secure';</script>",
+                                "text/html", "UTF-8", accountURL)
                         }
                         override fun destroy() { destroyed = true; super.destroy() }
                     }
@@ -146,8 +164,45 @@ class WebsiteSessionsTest {
             assertTrue(confirmed)
             assertTrue(destroyed)
             assertEquals(true, WebsiteSessions(instrumentation.targetContext).status()["ffn"])
+            assertTrue(WebsiteSessions(instrumentation.targetContext).cookies(accountURL).contains("sailune_login=SYNTHETIC"))
             clear(sessions)
             assertEquals(false, sessions.status()["ffn"])
+        } finally { scenario.close() }
+    }
+
+    @Test fun mobileAccountDetectionRejectsIncompleteOrUntrustedNavigation() {
+        val scenario = ActivityScenario.launch(MainActivity::class.java)
+        try {
+            val cases = listOf(
+                mobileAccountURL to "<h1>Account</h1>",
+                mobileAccountURL to mobileAccountNav.replace("/u/123/", "/m/login.php"),
+                mobileAccountURL to mobileAccountNav.replace("/m/logout.php", "https://evil.test/m/logout.php"),
+                mobileAccountURL to mobileAccountNav.replace("/m/acct.php", "/m/login.php"),
+                mobileAccountURL to (mobileAccountNav + "<input type='password'>"),
+                "https://m.fanfiction.net/s/123/1" to mobileAccountNav,
+                "https://fanfiction.net.evil.test/m/acct.php" to mobileAccountNav,
+            )
+            for ((pageURL, html) in cases) {
+                val checked = CountDownLatch(1)
+                var result = ""
+                lateinit var web: WebView
+                scenario.onActivity { activity ->
+                    web = WebView(activity)
+                    web.settings.javaScriptEnabled = true
+                    web.webViewClient = object: WebViewClient() {
+                        override fun onPageFinished(v: WebView, url: String) {
+                            v.evaluateJavascript(LoginEvidence.script("ffn")) {
+                                result = it; checked.countDown()
+                            }
+                        }
+                    }
+                    web.loadDataWithBaseURL(pageURL, html, "text/html", "UTF-8", pageURL)
+                }
+                try {
+                    assertTrue(checked.await(5, TimeUnit.SECONDS))
+                    assertEquals("false", result)
+                } finally { scenario.onActivity { web.destroy() } }
+            }
         } finally { scenario.close() }
     }
 
