@@ -40,8 +40,23 @@ jobs:
       - name: Report test failure details
         if: failure()
         run: |
+          python3 -m pip install --quiet --target "$RUNNER_TEMP/image-tools" pillow==11.3.0
+          export PYTHONPATH="$RUNNER_TEMP/image-tools"
           python3 - <<'PY'
           import os, pathlib
+          from PIL import Image, ImageChops
+          for image in pathlib.Path('test/failures').glob('*_testImage.png'):
+              master = image.with_name(image.name.replace('_testImage.png', '_masterImage.png'))
+              if not master.exists():
+                  continue
+              actual, expected = Image.open(image).convert('RGBA'), Image.open(master).convert('RGBA')
+              if actual.size != expected.size:
+                  print(f'::error::{image.name}: size {actual.size} != {expected.size}')
+                  continue
+              diff = ImageChops.difference(actual, expected)
+              deltas = [max(p) for p in diff.getdata()]
+              counts = {n: sum(d > n for d in deltas) for n in [0, 1, 2, 4, 8, 16, 32, 64, 128]}
+              print(f'::notice::{image.name}: bounds={diff.convert("RGB").getbbox()}, channel deltas={counts}')
           path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'flutter-tests.log'
           if path.exists():
               lines = path.read_text().splitlines()
