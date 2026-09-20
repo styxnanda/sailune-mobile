@@ -162,6 +162,12 @@ after a password form has been shown, repeat submissions, clear cookies, or
 treat errors as signed-in state. Direct live probes may still be blocked by
 FFN; automated recovery tests use controlled pages.
 
+The visible FFN sign-in window accepts third-party cookies for embedded
+verification frames. AO3 and the hidden fetch browser keep third-party cookies
+disabled. A completed CAPTCHA or verification cookie is not proof of login;
+the account navigation check still has to succeed. This addresses a browser
+compatibility restriction, not a verified cure for FFN's live login failures.
+
 The check reads only navigation links (AO3's header greeting/logout; FFN's
 account/logout navigation), never password fields or values. Cookie presence,
 page load, and redirects alone do not count. Detection is conservative and may

@@ -99,7 +99,10 @@ internal class SiteLoginDialog(
             javaScriptCanOpenWindowsAutomatically = false
             setSupportMultipleWindows(true)
         }
-        CookieManager.getInstance().setAcceptThirdPartyCookies(web,false)
+        // FFN embeds verification frames during sign-in. Their cookies must survive
+        // the challenge and subsequent form submission. This policy belongs only
+        // to the consented, visible FFN window; hidden fetching remains restricted.
+        CookieManager.getInstance().setAcceptThirdPartyCookies(web, site == "ffn")
         web.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(view: WebView, value: Int) {
                 progress.progress = value
