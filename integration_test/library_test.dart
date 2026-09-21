@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -85,16 +84,13 @@ void main() {
           }),
           1,
         );
-        final recorder = ui.PictureRecorder();
-        final canvas = ui.Canvas(recorder);
-        canvas.drawColor(const ui.Color(0xff607080), ui.BlendMode.src);
-        final picture = recorder.endRecording();
-        final image = await picture.toImage(120, 180);
-        final png = await image.toByteData(format: ui.ImageByteFormat.png);
-        image.dispose();
-        picture.dispose();
+        // A real PNG fixture avoids requiring a GPU just to test native storage.
         final imageFile = File('${temp.path}/cover.png');
-        await imageFile.writeAsBytes(png!.buffer.asUint8List());
+        await imageFile.writeAsBytes(
+          base64Decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAHgAAAC0CAIAAADQLH9KAAABUUlEQVR4nO3QAQkAIADAMKMawQhGt4XCHTzA2Zhr60Lj+cEngQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbdCjToVqBBtwINuhVo0K1Ag24FGnQr0KBbgQbd6gDSmcRzE58LsAAAAABJRU5ErkJggg==',
+          ),
+        );
         final art = await organize(reopened, {
           'action': 'artwork-set',
           'id': id,
