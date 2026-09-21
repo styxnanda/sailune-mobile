@@ -69,3 +69,14 @@ still fail comparison; larger asset-loading differences are not tolerated.
 The final normal release APK was separately installed and cold-launched on the
 ARM64 emulator. The shared core also round-tripped an 18 MiB ZIP containing
 24 MiB of notes and manual collection membership without data changes.
+
+### Android SQLite compatibility
+
+The x86_64 emulator exposed `SIGSYS` for legacy `lstat` (syscall 6) in the
+pure-Go Linux libc dependency. Mobile now registers the shared core's `sqlite`
+driver through an adapter backed by SQLite compiled against the Android NDK.
+The shared schema and ZIP format are unchanged. CLI and desktop retain their
+existing driver. All shared-core race tests pass with the mobile adapter;
+additional tests check foreign keys, busy timeout, full synchronization, secure
+deletion, and read-only connections. Native integration runs through
+`scripts/test-android-integration.sh` and uses a fixed PNG fixture.

@@ -38,6 +38,10 @@ Desktop releases target Windows AMD64 and Linux AMD64. The Wails macOS build rem
 
 ### Android signing
 
+Android uses SQLite compiled against the NDK runtime to support both ARM64 and
+x86_64 without prohibited Linux filesystem syscalls. The database schema and
+backup format remain compatible with Sailune CLI and Desktop.
+
 This APK is development-signed. CI signing keys are not a stable production key;
 an update over another build may require a backup, uninstall, and reinstall.
 Do not uninstall before exporting and verifying your backup. A managed production

@@ -1,5 +1,10 @@
 # Android implementation decisions
 
+For Android, `core/sqlitecompat` registers the shared core's SQLite driver name
+using `go-sqlite3` compiled against the NDK libc. This avoids Linux AMD64 legacy
+syscalls prohibited by Android's seccomp policy. Connection pragmas, transaction
+locking, schema, and backup compatibility remain shared with desktop and CLI.
+
 The initial stack discussion in Sailune-Go offered native SwiftUI/Compose and Flutter alternatives. The user selected Flutter + Dart, Android first, with iOS in a separate project. There is no iOS or Compose application in this repository.
 
 ## Shared-core boundary
