@@ -120,6 +120,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     final library = FakeLibrary(rows: []);
     await tester.pumpWidget(SailuneApp(library: library));
+    await tester.runAsync(
+      () => precacheImage(
+        const AssetImage('assets/sailune.png'),
+        tester.element(find.byType(SailuneApp)),
+      ),
+    );
     await tester.pumpAndSettle();
     final button = find.widgetWithText(FilledButton, 'Add story');
     expect(tester.getSize(button).width, 342);
@@ -184,6 +190,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     final library = _PendingAddLibrary();
     await tester.pumpWidget(SailuneApp(library: library));
+    await tester.runAsync(
+      () => precacheImage(
+        const AssetImage('assets/sailune.png'),
+        tester.element(find.byType(SailuneApp)),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add story'));
     await tester.pumpAndSettle();
@@ -252,6 +264,12 @@ void main() {
       )..theme = dark ? 'dark' : 'light';
       await tester.pumpWidget(
         RepaintBoundary(child: SailuneApp(library: library)),
+      );
+      await tester.runAsync(
+        () => precacheImage(
+          const AssetImage('assets/sailune.png'),
+          tester.element(find.byType(SailuneApp)),
+        ),
       );
       await tester.pumpAndSettle();
       await expectLater(

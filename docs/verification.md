@@ -48,7 +48,7 @@ separate smoke test.
 
 ## v0.9.0 validation
 
-- Flutter analysis and 43 widget tests pass, including reviewed light/dark artwork
+- Flutter analysis and 44 widget tests pass, including reviewed light/dark artwork
   goldens, collection deletion without story deletion, and narrow/large-text cards.
 - The real Android integration test verifies manual membership, image upload and
   byte retrieval, ZIP export/merge, and persisted appearance settings. Import
@@ -58,3 +58,14 @@ separate smoke test.
 - Integration-test APKs are not distributable app builds; see the entry-point
   warning above. Physical-device performance and production signing remain
   outside the automated emulator evidence.
+
+Visual tests preload SVG and logo assets before capturing animation frames.
+The comparator permits differences in at most 0.35% of pixels, with no channel
+changing by more than 48/255, to accommodate macOS antialiasing differences.
+Measured CI edge differences affected around 0.2–0.3% of pixels. A dedicated
+test verifies that missing high-contrast content and widespread color changes
+still fail comparison; larger asset-loading differences are not tolerated.
+
+The final normal release APK was separately installed and cold-launched on the
+ARM64 emulator. The shared core also round-tripped an 18 MiB ZIP containing
+24 MiB of notes and manual collection membership without data changes.
