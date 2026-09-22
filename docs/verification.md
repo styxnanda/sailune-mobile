@@ -80,3 +80,14 @@ existing driver. All shared-core race tests pass with the mobile adapter;
 additional tests check foreign keys, busy timeout, full synchronization, secure
 deletion, and read-only connections. Native integration runs through
 `scripts/test-android-integration.sh` and uses a fixed PNG fixture.
+
+## v0.9.5
+
+- 53 Flutter tests cover collection navigation, separate editors, existing/new
+  membership indicators, preview ratios and role selection, full-width detail
+  art, and action alignment. Updated light/dark golden screens were reviewed.
+- Go race tests cover 205 members across pagination, ratings excluding unrated
+  works, a five-story preview bound, membership outside the preview, and safe
+  collection deletion. Previews omit unnecessary story metadata.
+- Native integration checks the collection overview through the actual Android
+  channel alongside existing artwork, persistence, and ZIP round-trip checks.

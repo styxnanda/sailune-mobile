@@ -7,6 +7,7 @@ import '../data/library.dart';
 import '../widgets/app_feedback.dart';
 import '../models/story.dart';
 import '../widgets/story_card.dart';
+import '../widgets/library_navigation.dart';
 import 'add_story_sheet.dart';
 import 'story_screen.dart';
 import 'settings_screen.dart';
@@ -14,11 +15,13 @@ import 'collections_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   final Library library;
+  final Map<String, dynamic>? collection;
   final String theme;
   final Future<void> Function(String) onTheme;
   const LibraryScreen({
     super.key,
     required this.library,
+    this.collection,
     required this.theme,
     required this.onTheme,
   });
@@ -35,7 +38,8 @@ class _LibraryScreenState extends State<LibraryScreen>
   final _saving = <int>{};
   List<Story> _stories = [];
   String _collection = '', _coverMode = 'hidden';
-  List<Map<String, dynamic>> _collections = [];
+  bool _showCollections = false;
+  Map<String, dynamic>? _collectionDetails;
   String _shelf = '', _site = '', _sort = 'added';
   bool _unread = false, _loading = true, _more = false;
   String? _error;
@@ -45,6 +49,8 @@ class _LibraryScreenState extends State<LibraryScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _collectionDetails = widget.collection;
+    _collection = widget.collection?['id'] as String? ?? '';
     _load();
   }
 
@@ -71,13 +77,6 @@ class _LibraryScreenState extends State<LibraryScreen>
     try {
       final prefs =
           await widget.library.device('loadArtworkPreferences') as Map;
-      final collections = (await organize(widget.library, {
-        'action': 'collections',
-      }) as List).map((c) => Map<String, dynamic>.from(c as Map)).toList();
-      if (_collection.isNotEmpty &&
-          !collections.any((c) => c['id'] == _collection)) {
-        _collection = '';
-      }
       final rows = await listStories(widget.library, {
         'Collection': _collection,
         'Query': _search.text.trim(),
@@ -92,7 +91,7 @@ class _LibraryScreenState extends State<LibraryScreen>
       if (!mounted || generation != _generation) return;
       setState(() {
         _coverMode = prefs['mode'] as String? ?? 'hidden';
-        _collections = collections;
+
         _stories = append ? [..._stories, ...rows] : rows;
         _more = rows.length == 40;
         _loading = false;
@@ -308,30 +307,120 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final refined = _site.isNotEmpty || _sort != 'added' || _unread;
+    if (_showCollections && widget.collection == null) {
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) {
+            setState(() => _showCollections = false);
+            _load();
+          }
+        },
+        child: CollectionsScreen(
+          library: widget.library,
+          onLibrary: () {
+            setState(() => _showCollections = false);
+            _load();
+          },
+          onOpen: (collection) async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute<void>(
+                builder: (_) => LibraryScreen(
+                  library: widget.library,
+                  theme: widget.theme,
+                  onTheme: widget.onTheme,
+                  collection: collection,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            ClipOval(
-              child: Image.asset(
-                'assets/sailune.png',
-                width: 30,
-                height: 30,
-                excludeFromSemantics: true,
+        bottom: widget.collection == null
+            ? LibraryNavigation(
+                collections: false,
+                onLibrary: () {},
+                onCollections: () => setState(() => _showCollections = true),
+              )
+            : null,
+        title: widget.collection != null
+            ? Text(_collectionDetails?['name'] as String? ?? 'Collection')
+            : Row(
+                children: [
+                  ClipOval(
+                    child: Image.asset(
+                      'assets/sailune.png',
+                      width: 30,
+                      height: 30,
+                      excludeFromSemantics: true,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'sailune',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -.7,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'sailune',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -.7,
-              ),
-            ),
-          ],
-        ),
         actions: [
+          if (_collectionDetails?['kind'] == 'manual')
+            IconButton(
+              tooltip: 'Add or remove collection stories',
+              icon: const Icon(Icons.playlist_add_rounded),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => CollectionEditor(
+                      library: widget.library,
+                      collection: _collectionDetails,
+                      membersOnly: true,
+                    ),
+                  ),
+                );
+                if (mounted) _load();
+              },
+            ),
+          if (widget.collection != null)
+            IconButton(
+              tooltip: 'Edit collection details',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => CollectionEditor(
+                      library: widget.library,
+                      collection: _collectionDetails,
+                    ),
+                  ),
+                );
+                if (!mounted) return;
+                final rows = await organize(widget.library, {
+                  'action': 'collections',
+                }) as List;
+                final found = rows.where((c) => c['id'] == _collection);
+                if (!mounted) return;
+                if (found.isEmpty) {
+                  Navigator.pop(this.context);
+                  return;
+                }
+                setState(
+                  () => _collectionDetails = Map<String, dynamic>.from(
+                    found.first as Map,
+                  ),
+                );
+                _load();
+              },
+            ),
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.tune_rounded),
@@ -351,21 +440,23 @@ class _LibraryScreenState extends State<LibraryScreen>
           const SizedBox(width: 10),
         ],
       ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
-          child: FilledButton.icon(
-            key: _addButtonKey,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(double.infinity, 56),
+      bottomNavigationBar: widget.collection != null
+          ? null
+          : SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 16),
+                child: FilledButton.icon(
+                  key: _addButtonKey,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 56),
+                  ),
+                  onPressed: _edit,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Add story'),
+                ),
+              ),
             ),
-            onPressed: _edit,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Add story'),
-          ),
-        ),
-      ),
       body: SafeArea(
         top: false,
         child: Center(
@@ -384,12 +475,15 @@ class _LibraryScreenState extends State<LibraryScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Your reading room',
+                            _collectionDetails?['name'] as String? ??
+                                'Your reading room',
                             style: Theme.of(context).textTheme.headlineLarge,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Good stories. A little space for yourself.',
+                            widget.collection == null
+                                ? 'Good stories. A little space for yourself.'
+                                : 'Your stories, together in one place.',
                             style: TextStyle(
                               color: colors.onSurfaceVariant,
                               height: 1.5,
@@ -467,53 +561,6 @@ class _LibraryScreenState extends State<LibraryScreen>
                               ),
                             ],
                           ),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: DropdownButtonHideUnderline(
-                                  child: DropdownButton<String>(
-                                    value: _collection,
-                                    isExpanded: true,
-                                    items: [
-                                      const DropdownMenuItem(
-                                        value: '',
-                                        child: Text('All collections'),
-                                      ),
-                                      for (final c in _collections)
-                                        DropdownMenuItem(
-                                          value: c['id'] as String,
-                                          child: Text(
-                                            '${c['name']} · ${c['count']}',
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                    ],
-                                    onChanged: (v) {
-                                      setState(() => _collection = v!);
-                                      _load();
-                                    },
-                                  ),
-                                ),
-                              ),
-                              IconButton(
-                                tooltip: 'Manage collections',
-                                icon: const Icon(
-                                  Icons.collections_bookmark_outlined,
-                                ),
-                                onPressed: () async {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => CollectionsScreen(
-                                        library: widget.library,
-                                      ),
-                                    ),
-                                  );
-                                  if (mounted) await _load();
-                                },
-                              ),
-                            ],
-                          ),
                           const SizedBox(height: 12),
                         ],
                       ),
@@ -566,7 +613,9 @@ class _LibraryScreenState extends State<LibraryScreen>
                             const SizedBox(height: 12),
                             Text(
                               _search.text.isEmpty && _shelf.isEmpty && !refined
-                                  ? 'Save a story from AO3 or FanFiction.net.\nPick up right where you left off.'
+                                  ? (widget.collection == null
+                                        ? 'Save a story from AO3 or FanFiction.net.\nPick up right where you left off.'
+                                        : 'Use the icons above to edit this collection or add stories.')
                                   : 'Try another shelf or adjust your search.',
                               textAlign: TextAlign.center,
                               style: TextStyle(

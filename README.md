@@ -250,3 +250,10 @@ Complete ZIP backups include collections and images. Importing preserves existin
 personal data and images, fills missing artwork slots, and adds memberships.
 Legacy JSON backups remain importable. Back up before the schema-2 upgrade;
 older binaries cannot open the migrated library. Cloud sync is not included.
+
+## Android 0.9.5
+
+Collections now have a top-level tab, appearance-aware preview cards, and the
+same story browsing and filters as Library. Story detail artwork fills the
+viewport width. See [release notes](docs/release-v0.9.5.md). The shared Go core
+remains at v0.9.0; no database migration is needed for this interface update.

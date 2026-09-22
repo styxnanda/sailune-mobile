@@ -97,6 +97,52 @@ func (c *Client) Call(requestID, payload string) (string, error) {
 	var value any
 	var err error
 	switch r.Op {
+	case "collection-overviews":
+		var collections []sailune.Collection
+		collections, err = c.library.Collections()
+		if err == nil {
+			rows := make([]map[string]any, 0, len(collections))
+			for _, collection := range collections {
+				preview := make([]map[string]any, 0, 5)
+				total, rated, sum := 0, 0, 0
+				contains := false
+				for offset := 0; ; offset += 200 {
+					if err = ctx.Err(); err != nil {
+						break
+					}
+					var members []sailune.Bookmark
+					members, err = c.library.List(sailune.Filter{Collection: collection.ID, Sort: "added", Desc: true, Limit: 200, Offset: offset})
+					if err != nil {
+						break
+					}
+					for _, member := range members {
+						total++
+						if member.Rating > 0 {
+							rated++
+							sum += member.Rating
+						}
+						if member.ID == r.ID {
+							contains = true
+						}
+						if len(preview) < 5 {
+							preview = append(preview, map[string]any{"id": member.ID, "title": member.Title, "site": member.Site})
+						}
+					}
+					if len(members) < 200 {
+						break
+					}
+				}
+				if err != nil {
+					break
+				}
+				average := 0.0
+				if rated > 0 {
+					average = float64(sum) / float64(rated)
+				}
+				rows = append(rows, map[string]any{"collection": collection, "preview": preview, "count": total, "average": average, "rated": rated, "contains": contains})
+			}
+			value = rows
+		}
 	case "organize":
 		value, err = c.library.Organize(r.Feature)
 	case "list":

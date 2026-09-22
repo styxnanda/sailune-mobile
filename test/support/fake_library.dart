@@ -69,6 +69,8 @@ class FakeLibrary implements Library {
   }) async {
     requests.add(request);
     switch (request['op']) {
+      case 'collection-overviews':
+        return <dynamic>[];
       case 'organize':
         final f = request['feature'] as Map;
         if (f['action'] == 'count') return rows.length;

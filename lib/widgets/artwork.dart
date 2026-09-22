@@ -9,7 +9,7 @@ class StoryArtwork extends StatefulWidget {
   final Library library;
   final int id;
   final String site, role;
-  final bool small, faded;
+  final bool small, faded, square;
   final int revision;
   const StoryArtwork({
     super.key,
@@ -19,6 +19,7 @@ class StoryArtwork extends StatefulWidget {
     this.role = 'cover',
     this.small = true,
     this.faded = false,
+    this.square = false,
     this.revision = 0,
   });
   @override
@@ -79,7 +80,9 @@ class _StoryArtworkState extends State<StoryArtwork> {
   Widget build(BuildContext context) {
     final c = Theme.of(context).colorScheme;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(widget.role == 'cover' ? 9 : 0),
+      borderRadius: BorderRadius.circular(
+        widget.role == 'cover' && !widget.square ? 9 : 0,
+      ),
       child: ColoredBox(
         color: widget.faded ? Colors.transparent : c.surfaceContainerHighest,
         child: _bytes != null
@@ -88,6 +91,8 @@ class _StoryArtworkState extends State<StoryArtwork> {
                 child: Image.memory(
                   _bytes!,
                   fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
                   alignment: Alignment(_x * 2 - 1, _y * 2 - 1),
                   gaplessPlayback: true,
                   semanticLabel: widget.role == 'cover'
@@ -138,15 +143,19 @@ class StoryArtHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = Theme.of(context).scaffoldBackgroundColor;
+    final bannerHeight = (MediaQuery.sizeOf(context).height * .5).clamp(
+      280.0,
+      520.0,
+    );
     return SizedBox(
-      height: 320,
+      height: bannerHeight + 116,
       child: Stack(
         children: [
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: 215,
+            height: bannerHeight,
             child: StoryArtwork(
               library: library,
               id: id,
@@ -160,14 +169,14 @@ class StoryArtHeader extends StatelessWidget {
             top: 0,
             left: 0,
             right: 0,
-            height: 220,
+            height: bannerHeight + 1,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [bg.withValues(alpha: 0), bg],
-                  stops: const [.2, 1],
+                  stops: const [.55, 1],
                 ),
               ),
             ),

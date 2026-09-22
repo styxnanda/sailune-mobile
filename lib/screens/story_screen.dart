@@ -94,7 +94,9 @@ class _StoryScreenState extends State<StoryScreen> {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return Scaffold(
+      extendBodyBehindAppBar: _detailArt,
       appBar: AppBar(
+        backgroundColor: _detailArt ? Colors.transparent : null,
         actions: [
           IconButton(
             tooltip: 'Edit bookmark',
@@ -119,283 +121,320 @@ class _StoryScreenState extends State<StoryScreen> {
           const SizedBox(width: 12),
         ],
       ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 680),
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
-              children: [
-                if (_detailArt)
-                  StoryArtHeader(
-                    library: widget.library,
-                    id: _story.id,
-                    site: _story.site,
-                    revision: _artRevision,
-                  ),
-                Text(
-                  '${_story.site}  ·  ${shelves[_story.status]}',
-                  style: TextStyle(
-                    color: colors.onSurfaceVariant,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  _story.title,
-                  style: Theme.of(context).textTheme.headlineLarge,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  _story.author.isEmpty
-                      ? 'Author unknown'
-                      : 'by ${_story.author}',
-                  style: TextStyle(
-                    color: colors.onSurfaceVariant,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _busy
-                      ? null
-                      : () => _run(
-                          () => _open(_story.caughtUp ? 'open' : 'resume'),
-                        ),
-                  icon: const Icon(Icons.auto_stories_outlined),
-                  label: Text(
-                    _story.caughtUp ? 'Read again' : 'Read next chapter',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
+      body: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          if (_detailArt)
+            StoryArtHeader(
+              library: widget.library,
+              id: _story.id,
+              site: _story.site,
+              revision: _artRevision,
+            ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 680),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    OutlinedButton.icon(
-                      onPressed: () =>
-                          assignCollection(context, widget.library, _story.id),
-                      icon: const Icon(Icons.collections_bookmark_outlined),
-                      label: const Text('Add to collection'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) => ArtworkScreen(
-                              library: widget.library,
-                              story: _story,
-                            ),
-                          ),
-                        );
-                        if (mounted) setState(() => _artRevision++);
-                      },
-                      icon: const Icon(Icons.image_outlined),
-                      label: const Text('Artwork'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                if (_story.fandoms.isNotEmpty) ...[
-                  Text(
-                    _story.fandoms.join(' · '),
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (_story.summary.isNotEmpty)
-                  Text(
-                    _story.summary,
-                    style: const TextStyle(height: 1.75, fontSize: 15),
-                  ),
-                const SizedBox(height: 24),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 8,
-                  children: [
-                    if (_story.words > 0)
-                      Chip(label: Text('${_story.words} words')),
-                    if (_story.chapters > 0)
-                      Chip(label: Text('${_story.chapters} chapters')),
-                    if ((_story.metadata['language'] as String? ?? '')
-                        .isNotEmpty)
-                      Chip(label: Text(_story.metadata['language'] as String)),
-                    if (_story.rating > 0)
-                      Chip(
-                        avatar: const Icon(Icons.star_rounded, size: 18),
-                        label: Text('${_story.rating} / 5'),
+                    Text(
+                      '${_story.site}  ·  ${shelves[_story.status]}',
+                      style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 13,
                       ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const SizedBox(height: 28),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
+                    ),
+                    const SizedBox(height: 18),
+                    Text(
+                      _story.title,
+                      style: Theme.of(context).textTheme.headlineLarge,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _story.author.isEmpty
+                          ? 'Author unknown'
+                          : 'by ${_story.author}',
+                      style: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: _busy
+                          ? null
+                          : () => _run(
+                              () => _open(_story.caughtUp ? 'open' : 'resume'),
+                            ),
+                      icon: const Icon(Icons.auto_stories_outlined),
+                      label: Text(
+                        _story.caughtUp ? 'Read again' : 'Read next chapter',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _DetailActions(
                       children: [
-                        const Text(
-                          'YOUR READING PROGRESS',
-                          style: TextStyle(
-                            fontSize: 10,
-                            letterSpacing: 1.5,
-                            fontWeight: FontWeight.w600,
+                        OutlinedButton.icon(
+                          onPressed: () => assignCollection(
+                            context,
+                            widget.library,
+                            _story.id,
                           ),
+                          icon: const Icon(Icons.collections_bookmark_outlined),
+                          label: const Text('Add to collection'),
                         ),
-                        const SizedBox(height: 18),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            IconButton(
-                              tooltip: 'Previous chapter',
-                              onPressed: _busy || _story.chapter == 0
-                                  ? null
-                                  : () => _run(
-                                      () => _update({
-                                        'op': 'update',
-                                        'id': _story.id,
-                                        'patch': {
-                                          'Chapter': _story.chapter - 1,
-                                        },
-                                      }),
-                                    ),
-                              icon: const Icon(Icons.remove_rounded),
-                            ),
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  Text(
-                                    '${_story.chapter}',
-                                    style: const TextStyle(
-                                      fontSize: 44,
-                                      fontWeight: FontWeight.w500,
-                                      fontFeatures: [
-                                        FontFeature.tabularFigures(),
-                                      ],
-                                    ),
-                                  ),
-                                  Text(
-                                    _story.chapters > 0
-                                        ? 'of ${_story.chapters} chapters'
-                                        : 'chapters read',
-                                    style: TextStyle(
-                                      color: colors.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
+                        OutlinedButton.icon(
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (_) => ArtworkScreen(
+                                  library: widget.library,
+                                  story: _story,
+                                ),
                               ),
-                            ),
-                            IconButton(
-                              tooltip: 'Mark next chapter read',
-                              onPressed: _busy || _story.caughtUp
-                                  ? null
-                                  : () => _run(
-                                      () => _update({
-                                        'op': 'update',
-                                        'id': _story.id,
-                                        'patch': {
-                                          'Chapter': _story.chapter + 1,
-                                        },
-                                      }),
-                                    ),
-                              icon: const Icon(Icons.add_rounded),
-                            ),
-                          ],
+                            );
+                            if (mounted) setState(() => _artRevision++);
+                          },
+                          icon: const Icon(Icons.image_outlined),
+                          label: const Text('Artwork'),
                         ),
-                        const SizedBox(height: 20),
-                        if (_story.progress != null)
-                          LinearProgressIndicator(
-                            value: _story.progress,
-                            borderRadius: BorderRadius.circular(8),
-                            minHeight: 4,
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    if (_story.fandoms.isNotEmpty) ...[
+                      Text(
+                        _story.fandoms.join(' · '),
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    if (_story.summary.isNotEmpty)
+                      Text(
+                        _story.summary,
+                        style: const TextStyle(height: 1.75, fontSize: 15),
+                      ),
+                    const SizedBox(height: 24),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 8,
+                      children: [
+                        if (_story.words > 0)
+                          Chip(label: Text('${_story.words} words')),
+                        if (_story.chapters > 0)
+                          Chip(label: Text('${_story.chapters} chapters')),
+                        if ((_story.metadata['language'] as String? ?? '')
+                            .isNotEmpty)
+                          Chip(
+                            label: Text(_story.metadata['language'] as String),
+                          ),
+                        if (_story.rating > 0)
+                          Chip(
+                            avatar: const Icon(Icons.star_rounded, size: 18),
+                            label: Text('${_story.rating} / 5'),
                           ),
                       ],
                     ),
-                  ),
-                ),
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 24),
-                    child: Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        _error!,
-                        style: TextStyle(color: colors.error),
+                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            const Text(
+                              'YOUR READING PROGRESS',
+                              style: TextStyle(
+                                fontSize: 10,
+                                letterSpacing: 1.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                IconButton(
+                                  tooltip: 'Previous chapter',
+                                  onPressed: _busy || _story.chapter == 0
+                                      ? null
+                                      : () => _run(
+                                          () => _update({
+                                            'op': 'update',
+                                            'id': _story.id,
+                                            'patch': {
+                                              'Chapter': _story.chapter - 1,
+                                            },
+                                          }),
+                                        ),
+                                  icon: const Icon(Icons.remove_rounded),
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    children: [
+                                      Text(
+                                        '${_story.chapter}',
+                                        style: const TextStyle(
+                                          fontSize: 44,
+                                          fontWeight: FontWeight.w500,
+                                          fontFeatures: [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ),
+                                      ),
+                                      Text(
+                                        _story.chapters > 0
+                                            ? 'of ${_story.chapters} chapters'
+                                            : 'chapters read',
+                                        style: TextStyle(
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Mark next chapter read',
+                                  onPressed: _busy || _story.caughtUp
+                                      ? null
+                                      : () => _run(
+                                          () => _update({
+                                            'op': 'update',
+                                            'id': _story.id,
+                                            'patch': {
+                                              'Chapter': _story.chapter + 1,
+                                            },
+                                          }),
+                                        ),
+                                  icon: const Icon(Icons.add_rounded),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 20),
+                            if (_story.progress != null)
+                              LinearProgressIndicator(
+                                value: _story.progress,
+                                borderRadius: BorderRadius.circular(8),
+                                minHeight: 4,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                InlineScrapeProgress(task: _scrape),
-                if (_busy && !_scrape.running)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 20),
-                    child: LinearProgressIndicator(),
-                  ),
-                const SizedBox(height: 28),
-                if (_story.tags.isNotEmpty)
-                  Wrap(
-                    spacing: 8,
-                    children: _story.tags
-                        .map((tag) => Chip(label: Text(tag)))
-                        .toList(),
-                  ),
-                if (_story.notes.isNotEmpty) ...[
-                  const SizedBox(height: 20),
-                  Text(
-                    'Your notes',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 10),
-                  SelectableText(
-                    _story.notes,
-                    style: const TextStyle(height: 1.7),
-                  ),
-                ],
-                const Divider(),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.refresh_rounded),
-                  title: const Text('Refresh website details'),
-                  onTap: _busy
-                      ? null
-                      : () => _run(
-                          () => _update({'op': 'refresh', 'id': _story.id}),
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 24),
+                        child: Semantics(
+                          liveRegion: true,
+                          child: Text(
+                            _error!,
+                            style: TextStyle(color: colors.error),
+                          ),
                         ),
+                      ),
+                    InlineScrapeProgress(task: _scrape),
+                    if (_busy && !_scrape.running)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 20),
+                        child: LinearProgressIndicator(),
+                      ),
+                    const SizedBox(height: 28),
+                    if (_story.tags.isNotEmpty)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _story.tags
+                            .map((tag) => Chip(label: Text(tag)))
+                            .toList(),
+                      ),
+                    if (_story.notes.isNotEmpty) ...[
+                      const SizedBox(height: 20),
+                      Text(
+                        'Your notes',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 10),
+                      SelectableText(
+                        _story.notes,
+                        style: const TextStyle(height: 1.7),
+                      ),
+                    ],
+                    const Divider(),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.refresh_rounded),
+                      title: const Text('Refresh website details'),
+                      onTap: _busy
+                          ? null
+                          : () => _run(
+                              () => _update({'op': 'refresh', 'id': _story.id}),
+                            ),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.open_in_new_rounded),
+                      title: const Text('Open website'),
+                      onTap: _busy ? null : () => _run(() => _open('open')),
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.link_rounded),
+                      title: const Text('Copy story link'),
+                      onTap: () async {
+                        await Clipboard.setData(
+                          ClipboardData(text: _story.url),
+                        );
+                        if (context.mounted) {
+                          showAppNotice(context, 'Story link copied');
+                        }
+                      },
+                    ),
+                    const Divider(),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(
+                        Icons.delete_outline_rounded,
+                        color: colors.error,
+                      ),
+                      title: Text(
+                        'Remove bookmark',
+                        style: TextStyle(color: colors.error),
+                      ),
+                      onTap: _busy ? null : _delete,
+                    ),
+                  ],
                 ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.open_in_new_rounded),
-                  title: const Text('Open website'),
-                  onTap: _busy ? null : () => _run(() => _open('open')),
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.link_rounded),
-                  title: const Text('Copy story link'),
-                  onTap: () async {
-                    await Clipboard.setData(ClipboardData(text: _story.url));
-                    if (context.mounted) {
-                      showAppNotice(context, 'Story link copied');
-                    }
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    Icons.delete_outline_rounded,
-                    color: colors.error,
-                  ),
-                  title: Text(
-                    'Remove bookmark',
-                    style: TextStyle(color: colors.error),
-                  ),
-                  onTap: _busy ? null : _delete,
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
+}
+
+class _DetailActions extends StatelessWidget {
+  final List<Widget> children;
+  const _DetailActions({required this.children});
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      if (constraints.maxWidth < 320 ||
+          MediaQuery.textScalerOf(context).scale(16) > 20) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [children[0], const SizedBox(height: 12), children[1]],
+        );
+      }
+      return Row(
+        children: [
+          Expanded(flex: 3, child: children[0]),
+          const SizedBox(width: 12),
+          Expanded(flex: 2, child: children[1]),
+        ],
+      );
+    },
+  );
 }

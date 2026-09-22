@@ -311,14 +311,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 16),
               const Text(
-                'SAILUNE  /  0.9.0',
+                'SAILUNE  /  0.9.5',
                 style: TextStyle(fontSize: 11, letterSpacing: 1.4),
               ),
               TextButton(
                 onPressed: () => showLicensePage(
                   context: context,
                   applicationName: 'Sailune',
-                  applicationVersion: '0.9.0',
+                  applicationVersion: '0.9.5',
                   applicationLegalese: 'GPL-3.0 · Shared Sailune-Go core',
                 ),
                 child: const Text('Open-source licenses'),

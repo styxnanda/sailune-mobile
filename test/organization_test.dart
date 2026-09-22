@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:sailune_mobile/screens/collections_screen.dart';
+import 'package:sailune_mobile/widgets/collection_card.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sailune_mobile/main.dart';
 import 'package:sailune_mobile/models/story.dart';
@@ -13,6 +13,7 @@ import 'support/fake_library.dart';
 class OrganizedFake extends FakeLibrary {
   String mode = 'hidden';
   bool details = true;
+  final membership = <String>{};
   final collections = <Map<String, dynamic>>[];
   @override
   Future<dynamic> device(String method, [dynamic arguments]) async {
@@ -32,9 +33,26 @@ class OrganizedFake extends FakeLibrary {
     Map<String, dynamic> request, {
     String? requestId,
   }) async {
+    if (request['op'] == 'collection-overviews') {
+      return collections
+          .map(
+            (c) => {
+              'collection': c,
+              'preview': rows.take(5).toList(),
+              'count': rows.length,
+              'average': 5.0,
+              'rated': 1,
+              'contains': membership.contains(c['id']),
+            },
+          )
+          .toList();
+    }
     if (request['op'] == 'organize') {
       final f = request['feature'] as Map;
       switch (f['action']) {
+        case 'membership':
+          membership.add(f['collection_id'] as String);
+          return null;
         case 'collections':
           return collections;
         case 'collection-save':
@@ -73,7 +91,7 @@ void main() {
     final library = OrganizedFake();
     await tester.pumpWidget(SailuneApp(library: library));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Manage collections'));
+    await tester.tap(find.text('Collections'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('New collection'));
     await tester.pumpAndSettle();
@@ -89,17 +107,7 @@ void main() {
     expect(library.collections.single['name'], 'trauma-inducing');
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      find.text('Delete collection'),
-      300,
-      scrollable: find
-          .descendant(
-            of: find.byType(CollectionEditor),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.tap(find.text('Delete collection'));
+    await tester.longPress(find.byType(CollectionCard));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(FilledButton, 'Delete collection'));
     await tester.pumpAndSettle();

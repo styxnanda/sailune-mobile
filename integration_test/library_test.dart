@@ -84,6 +84,17 @@ void main() {
           }),
           1,
         );
+        final overviews = await reopened.call({
+          'op': 'collection-overviews',
+          'id': id,
+        }) as List;
+        final overview = overviews.singleWhere(
+          (r) => r['collection']['id'] == collection['id'],
+        ) as Map;
+        expect(overview['count'], 1);
+        expect(overview['average'], 4);
+        expect(overview['contains'], true);
+        expect((overview['preview'] as List).single['id'], id);
         // A real PNG fixture avoids requiring a GPU just to test native storage.
         final imageFile = File('${temp.path}/cover.png');
         await imageFile.writeAsBytes(
