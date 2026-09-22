@@ -12,6 +12,8 @@ to adding a story or creating a collection, with matching Sailune button styling
   as Library. Collection details and manual membership editing have separate pages.
 - Hold a collection card to delete it with confirmation. Its stories remain in
   the library. Manual and automatic collection membership are still supported.
+- Transparent Android status and navigation bars extend the canvas edge-to-edge,
+  with theme-aware system icons and safe spacing for controls.
 - The story-detail banner fills the screen width behind the toolbar, covering
   half the viewport before merging into the page around the portrait cover.
 - Detail actions share the primary button's width, with consistent spacing and
@@ -19,7 +21,7 @@ to adding a story or creating a collection, with matching Sailune button styling
 - The collection picker identifies existing membership, including automatic
   matches, and updates its indicator immediately after adding a story.
 
-The app version is 0.9.5 (Android build 10). This is an Android interface release;
+The app version is 0.9.5 (Android build 11). This is an Android interface release;
 the shared core remains v0.9.0. Existing databases and ZIP backups remain compatible.
 No cloud synchronization is included.
 

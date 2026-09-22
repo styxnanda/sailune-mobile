@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'data/library.dart';
 import 'screens/library_screen.dart';
@@ -6,8 +7,9 @@ import 'screens/onboarding_screen.dart';
 import 'theme.dart';
 import 'widgets/launch_reveal.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   runApp(SailuneApp(library: AndroidLibrary()));
 }
 
@@ -61,8 +63,10 @@ class _SailuneAppState extends State<SailuneApp> {
       'dark' => ThemeMode.dark,
       _ => ThemeMode.system,
     },
-    builder: (context, child) =>
-        LaunchReveal(ready: _onboarded != null, child: child!),
+    builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+      value: sailuneSystemBars(Theme.of(context).brightness),
+      child: LaunchReveal(ready: _onboarded != null, child: child!),
+    ),
     home: _onboarded == null
         ? const Scaffold(body: Center(child: CircularProgressIndicator()))
         : _onboarded == false

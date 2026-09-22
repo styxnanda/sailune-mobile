@@ -141,4 +141,9 @@ jobs:
           test "$GITHUB_REF_NAME" = v0.9.5
           mv packages/app-release.apk packages/sailune-v0.9.5-android.apk
           (cd packages && sha256sum *.apk > SHA256SUMS)
-          gh release create "$GITHUB_REF_NAME" packages/* --verify-tag --title "Sailune Android $GITHUB_REF_NAME" --notes-file docs/release-v0.9.5.md
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" packages/* --clobber
+            gh release edit "$GITHUB_REF_NAME" --title "Sailune Android $GITHUB_REF_NAME" --notes-file docs/release-v0.9.5.md
+          else
+            gh release create "$GITHUB_REF_NAME" packages/* --verify-tag --title "Sailune Android $GITHUB_REF_NAME" --notes-file docs/release-v0.9.5.md
+          fi
