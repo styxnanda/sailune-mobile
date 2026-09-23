@@ -318,6 +318,8 @@ class _LibraryScreenState extends State<LibraryScreen>
         },
         child: CollectionsScreen(
           library: widget.library,
+          theme: widget.theme,
+          onTheme: widget.onTheme,
           onLibrary: () {
             setState(() => _showCollections = false);
             _load();
@@ -479,16 +481,16 @@ class _LibraryScreenState extends State<LibraryScreen>
                                 'Your reading room',
                             style: Theme.of(context).textTheme.headlineLarge,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            widget.collection == null
-                                ? 'Good stories. A little space for yourself.'
-                                : 'Your stories, together in one place.',
-                            style: TextStyle(
-                              color: colors.onSurfaceVariant,
-                              height: 1.5,
+                          if (widget.collection == null) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'Good stories. A little space for yourself.',
+                              style: TextStyle(
+                                color: colors.onSurfaceVariant,
+                                height: 1.5,
+                              ),
                             ),
-                          ),
+                          ],
                           const SizedBox(height: 26),
                           TextField(
                             controller: _search,

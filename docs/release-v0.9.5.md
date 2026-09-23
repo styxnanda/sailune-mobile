@@ -20,8 +20,11 @@ to adding a story or creating a collection, with matching Sailune button styling
   stacked controls on narrow screens or at large text sizes.
 - The collection picker identifies existing membership, including automatic
   matches, and updates its indicator immediately after adding a story.
+- Library and Collections now share the same Sailune header and Settings action.
+  Story details use colored AO3 or FFN marks alongside the reading status, and
+  Settings includes links to Sailune's GitHub, Instagram, and LinkedIn.
 
-The app version is 0.9.5 (Android build 12). This is an Android interface release;
+The app version is 0.9.5 (Android build 13). This is an Android interface release;
 the shared core remains v0.9.0. Existing databases and ZIP backups remain compatible.
 No cloud synchronization is included.
 

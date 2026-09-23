@@ -80,9 +80,8 @@ class _ChapterActionsState extends State<ChapterActions> {
             : Semantics(
                 button: true,
                 label: '${widget.story.progressLabel}, chapter actions',
-                child: InkWell(
+                child: GestureDetector(
                   key: const ValueKey('chapter-count'),
-                  borderRadius: BorderRadius.circular(24),
                   onTap: widget.onAction == null
                       ? null
                       : () => setState(() => _expanded = true),

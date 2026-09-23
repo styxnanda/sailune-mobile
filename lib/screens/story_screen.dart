@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../data/library.dart';
 import '../widgets/app_feedback.dart';
@@ -139,12 +140,19 @@ class _StoryScreenState extends State<StoryScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      '${_story.site}  ·  ${shelves[_story.status]}',
-                      style: TextStyle(
-                        color: colors.onSurfaceVariant,
-                        fontSize: 13,
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _StorySiteIcon(site: _story.site),
+                        const SizedBox(width: 7),
+                        Text(
+                          shelves[_story.status] ?? _story.status,
+                          style: TextStyle(
+                            color: colors.onSurfaceVariant,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 18),
                     Text(
@@ -410,6 +418,30 @@ class _StoryScreenState extends State<StoryScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _StorySiteIcon extends StatelessWidget {
+  final String site;
+  const _StorySiteIcon({required this.site});
+
+  @override
+  Widget build(BuildContext context) {
+    final ao3 = site == 'AO3';
+    return Semantics(
+      label: ao3 ? 'Archive of Our Own' : 'FanFiction.net',
+      child: SizedBox(
+        width: 16,
+        height: 16,
+        child: SvgPicture.asset(
+          ao3 ? 'assets/sites/ao3.svg' : 'assets/sites/ffn.svg',
+          colorFilter: ColorFilter.mode(
+            ao3 ? const Color(0xff990000) : const Color(0xff1b70b8),
+            BlendMode.srcIn,
+          ),
+        ),
       ),
     );
   }

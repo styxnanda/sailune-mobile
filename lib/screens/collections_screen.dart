@@ -5,14 +5,19 @@ import '../models/story.dart';
 import '../widgets/app_feedback.dart';
 import '../widgets/collection_card.dart';
 import '../widgets/library_navigation.dart';
+import 'settings_screen.dart';
 
 class CollectionsScreen extends StatefulWidget {
   final Library library;
+  final String theme;
+  final Future<void> Function(String) onTheme;
   final VoidCallback onLibrary;
   final Future<void> Function(Map<String, dynamic>) onOpen;
   const CollectionsScreen({
     super.key,
     required this.library,
+    required this.theme,
+    required this.onTheme,
     required this.onLibrary,
     required this.onOpen,
   });
@@ -91,7 +96,46 @@ class _CollectionsScreenState extends State<CollectionsScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('sailune'),
+      title: Row(
+        children: [
+          ClipOval(
+            child: Image.asset(
+              'assets/sailune.png',
+              width: 30,
+              height: 30,
+              excludeFromSemantics: true,
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Text(
+            'sailune',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -.7,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        IconButton(
+          tooltip: 'Settings',
+          icon: const Icon(Icons.tune_rounded),
+          onPressed: () async {
+            await Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SettingsScreen(
+                  library: widget.library,
+                  theme: widget.theme,
+                  onTheme: widget.onTheme,
+                ),
+              ),
+            );
+            if (mounted) await _load();
+          },
+        ),
+        const SizedBox(width: 10),
+      ],
       bottom: LibraryNavigation(
         collections: true,
         onLibrary: widget.onLibrary,

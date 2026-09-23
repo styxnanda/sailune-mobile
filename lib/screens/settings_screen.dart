@@ -323,10 +323,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 child: const Text('Open-source licenses'),
               ),
+              const SizedBox(height: 28),
+              Center(
+                child: Text(
+                  'Support Me!',
+                  style: TextStyle(
+                    fontFamily: 'Sailune',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    fontStyle: FontStyle.italic,
+                    letterSpacing: -.8,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _supportLink(
+                    tooltip: 'Sailune on GitHub',
+                    icon: Icons.code_rounded,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    url: 'https://github.com/styxnanda/sailune-mobile',
+                  ),
+                  const SizedBox(width: 12),
+                  _supportLink(
+                    tooltip: 'satyaand on Instagram',
+                    icon: Icons.camera_alt_outlined,
+                    color: const Color(0xffd62976),
+                    url: 'https://www.instagram.com/satyaand/',
+                  ),
+                  const SizedBox(width: 12),
+                  _supportLink(
+                    tooltip: 'satyaand on LinkedIn',
+                    icon: Icons.work_outline_rounded,
+                    color: const Color(0xff0a66c2),
+                    url: 'https://www.linkedin.com/in/satyaand/',
+                  ),
+                ],
+              ),
             ],
           ),
         ),
       ),
     ),
+  );
+
+  Widget _supportLink({
+    required String tooltip,
+    required IconData icon,
+    required Color color,
+    required String url,
+  }) => IconButton(
+    tooltip: tooltip,
+    onPressed: _busy
+        ? null
+        : () => _run(() async {
+            await widget.library.openLink(url);
+            return null;
+          }),
+    icon: Icon(icon, color: color),
   );
 }
