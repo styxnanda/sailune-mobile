@@ -134,6 +134,7 @@ class _ArtworkScreenState extends State<ArtworkScreen> {
               value: _y,
               onChanged: _busy ? null : (v) => setState(() => _y = v),
             ),
+            const SizedBox(height: 8),
             OutlinedButton(
               onPressed: _busy ? null : () => _run(_frame),
               child: const Text('Preview framing'),
@@ -158,6 +159,7 @@ class _ArtworkScreenState extends State<ArtworkScreen> {
             icon: const Icon(Icons.image_outlined),
             label: const Text('Choose image'),
           ),
+          const SizedBox(height: 12),
           FilledButton(
             onPressed: _busy || _path == null
                 ? null
@@ -180,6 +182,7 @@ class _ArtworkScreenState extends State<ArtworkScreen> {
                   }),
             child: const Text('Save artwork'),
           ),
+          const SizedBox(height: 12),
           TextButton(
             onPressed: _busy
                 ? null

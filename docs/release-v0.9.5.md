@@ -21,7 +21,7 @@ to adding a story or creating a collection, with matching Sailune button styling
 - The collection picker identifies existing membership, including automatic
   matches, and updates its indicator immediately after adding a story.
 
-The app version is 0.9.5 (Android build 11). This is an Android interface release;
+The app version is 0.9.5 (Android build 12). This is an Android interface release;
 the shared core remains v0.9.0. Existing databases and ZIP backups remain compatible.
 No cloud synchronization is included.
 

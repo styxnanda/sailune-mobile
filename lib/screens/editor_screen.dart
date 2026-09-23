@@ -142,7 +142,7 @@ class _EditorScreenState extends State<EditorScreen> {
                 keyboardDismissBehavior:
                     ScrollViewKeyboardDismissBehavior.onDrag,
                 children: [
-                  if (widget.story != null)
+                  if (widget.story != null) ...[
                     OutlinedButton.icon(
                       onPressed: _busy
                           ? null
@@ -158,6 +158,8 @@ class _EditorScreenState extends State<EditorScreen> {
                       icon: const Icon(Icons.image_outlined),
                       label: const Text('Edit cover and background'),
                     ),
+                    const SizedBox(height: 18),
+                  ],
 
                   if (widget.story == null) ...[
                     TextFormField(
@@ -173,6 +175,7 @@ class _EditorScreenState extends State<EditorScreen> {
                           ? 'Paste a story link to continue'
                           : null,
                     ),
+                    const SizedBox(height: 12),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Fetch website details'),

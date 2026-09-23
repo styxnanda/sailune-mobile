@@ -366,6 +366,7 @@ class _CollectionEditorState extends State<CollectionEditor> {
               maxLength: 200,
               decoration: const InputDecoration(labelText: 'Collection name'),
             ),
+            const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: _kind,
               decoration: const InputDecoration(labelText: 'Type'),
@@ -402,17 +403,20 @@ class _CollectionEditorState extends State<CollectionEditor> {
                     labelText: 'Personal tags · one per line',
                   ),
                 ),
+                const SizedBox(height: 12),
                 _suggestions(
                   'Personal tag suggestions',
                   _personalTags,
                   _personal,
                 ),
+                const SizedBox(height: 12),
                 SwitchListTile(
                   title: const Text('Match all personal tags'),
                   subtitle: const Text('Off matches any selected tag'),
                   value: _allPersonal,
                   onChanged: (v) => setState(() => _allPersonal = v),
                 ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: _source,
                   minLines: 2,
@@ -421,13 +425,16 @@ class _CollectionEditorState extends State<CollectionEditor> {
                     labelText: 'Website tags · one per line',
                   ),
                 ),
+                const SizedBox(height: 12),
                 _suggestions('Website tag suggestions', _sourceTags, _source),
+                const SizedBox(height: 12),
                 SwitchListTile(
                   title: const Text('Match all website tags'),
                   subtitle: const Text('Off matches any selected tag'),
                   value: _allSource,
                   onChanged: (v) => setState(() => _allSource = v),
                 ),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: _site,
                   decoration: const InputDecoration(labelText: 'Website'),
@@ -438,6 +445,7 @@ class _CollectionEditorState extends State<CollectionEditor> {
                   ],
                   onChanged: (v) => setState(() => _site = v!),
                 ),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: _status,
                   decoration: const InputDecoration(
@@ -449,10 +457,12 @@ class _CollectionEditorState extends State<CollectionEditor> {
                   ],
                   onChanged: (v) => setState(() => _status = v!),
                 ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: _fandom,
                   decoration: const InputDecoration(labelText: 'Fandom'),
                 ),
+                const SizedBox(height: 12),
                 _suggestions('Fandom suggestions', _fandoms, _fandom),
               ],
             ),
@@ -486,6 +496,7 @@ class _CollectionEditorState extends State<CollectionEditor> {
               controller: _query,
               decoration: const InputDecoration(labelText: 'Search stories'),
             ),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 12,
@@ -511,7 +522,9 @@ class _CollectionEditorState extends State<CollectionEditor> {
                   ),
               ],
             ),
+            const SizedBox(height: 12),
             Text('$_total matching stories'),
+            const SizedBox(height: 8),
             for (final s in _rows)
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
@@ -529,30 +542,34 @@ class _CollectionEditorState extends State<CollectionEditor> {
                       }),
               ),
             if (_rows.isNotEmpty || _offset > 0)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: _busy || _offset == 0
-                        ? null
-                        : () => _run(() async {
-                            _offset = (_offset - 20).clamp(0, _total);
-                            await _preview(reset: false);
-                          }),
-                    child: const Text('Previous'),
-                  ),
-                  TextButton(
-                    onPressed: _busy || _offset + 20 >= _total
-                        ? null
-                        : () => _run(() async {
-                            _offset += 20;
-                            await _preview(reset: false);
-                          }),
-                    child: const Text('Next'),
-                  ),
-                ],
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: _busy || _offset == 0
+                          ? null
+                          : () => _run(() async {
+                              _offset = (_offset - 20).clamp(0, _total);
+                              await _preview(reset: false);
+                            }),
+                      child: const Text('Previous'),
+                    ),
+                    TextButton(
+                      onPressed: _busy || _offset + 20 >= _total
+                          ? null
+                          : () => _run(() async {
+                              _offset += 20;
+                              await _preview(reset: false);
+                            }),
+                      child: const Text('Next'),
+                    ),
+                  ],
+                ),
               ),
             if (_id != null && _kind == 'manual') ...[
+              const SizedBox(height: 12),
               TextButton(
                 onPressed: _busy || _rows.isEmpty
                     ? null

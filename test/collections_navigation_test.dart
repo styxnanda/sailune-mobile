@@ -62,6 +62,8 @@ void main() {
       await tester.tap(find.byTooltip('Add or remove collection stories'));
       await tester.pumpAndSettle();
       expect(find.widgetWithText(TextField, 'Collection name'), findsNothing);
+      await tester.drag(find.byType(ListView).last, const Offset(0, -900));
+      await tester.pumpAndSettle();
       expect(find.text('Add selected to collection'), findsOneWidget);
     },
   );
