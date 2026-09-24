@@ -187,6 +187,32 @@ class _LibraryScreenState extends State<LibraryScreen>
     }
   }
 
+  Future<void> _removeFromCollection(Story story) async {
+    if (_saving.contains(story.id) || _collection.isEmpty) return;
+    final confirmed = await confirmAction(
+      context,
+      title: 'Remove from collection?',
+      message: '“${story.title}” will stay in your library.',
+      confirm: 'Remove from collection',
+      cancel: 'Keep story here',
+    );
+    if (confirmed != true || !mounted || _saving.contains(story.id)) return;
+    setState(() => _saving.add(story.id));
+    try {
+      await organize(widget.library, {
+        'action': 'membership',
+        'collection_id': _collection,
+        'ids': [story.id],
+        'remove': true,
+      });
+      if (mounted) await _load();
+    } catch (e) {
+      _message(errorMessage(e));
+    } finally {
+      if (mounted) setState(() => _saving.remove(story.id));
+    }
+  }
+
   Future<void> _edit() async {
     if (_adding) return;
     _adding = true;
@@ -645,6 +671,9 @@ class _LibraryScreenState extends State<LibraryScreen>
                           onOpen: () => _open(story),
                           onDelete: _saving.contains(story.id)
                               ? null
+                              : widget.collection != null &&
+                                    _collectionDetails?['kind'] == 'manual'
+                              ? () => _removeFromCollection(story)
                               : () => _delete(story),
                           onChapter: _saving.contains(story.id)
                               ? null

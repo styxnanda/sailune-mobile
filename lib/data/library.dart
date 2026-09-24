@@ -9,6 +9,7 @@ abstract class Library {
   Future<dynamic> call(Map<String, dynamic> request, {String? requestId});
   Future<void> cancel(String requestId);
   Future<void> openLink(String url);
+  Future<void> openExternalLink(String url);
   Future<Map<String, bool>> websiteSessions();
   Future<bool> connectWebsite(String site, {required bool consent});
   Future<void> clearWebsiteSessions({required bool consent});
@@ -62,6 +63,9 @@ class AndroidLibrary implements Library {
 
   @override
   Future<void> openLink(String url) => channel.invokeMethod('openLink', url);
+  @override
+  Future<void> openExternalLink(String url) =>
+      channel.invokeMethod('openExternalLink', url);
   @override
   Future<String?> pickBackup() => channel.invokeMethod<String>('pickBackup');
   @override

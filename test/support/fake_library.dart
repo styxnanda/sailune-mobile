@@ -135,6 +135,11 @@ class FakeLibrary implements Library {
   }
 
   @override
+  Future<void> openExternalLink(String url) async {
+    links.add(url);
+  }
+
+  @override
   Future<String?> pickBackup() async => null;
   @override
   Future<bool> saveBackup(String snapshot) async => false;

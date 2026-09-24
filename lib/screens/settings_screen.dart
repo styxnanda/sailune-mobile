@@ -309,19 +309,51 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'SAILUNE  /  0.9.5',
-                style: TextStyle(fontSize: 11, letterSpacing: 1.4),
-              ),
-              TextButton(
-                onPressed: () => showLicensePage(
-                  context: context,
-                  applicationName: 'Sailune',
-                  applicationVersion: '0.9.5',
-                  applicationLegalese: 'GPL-3.0 · Shared Sailune-Go core',
+              const SizedBox(height: 36),
+              Semantics(
+                button: true,
+                label: 'Sailune version 0.9.5. Open-source licenses',
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => showLicensePage(
+                    context: context,
+                    applicationName: 'Sailune',
+                    applicationVersion: '0.9.5',
+                    applicationLegalese: 'GPL-3.0 · Shared Sailune-Go core',
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          'assets/sailune.png',
+                          width: 44,
+                          height: 44,
+                          excludeFromSemantics: true,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'sailune',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -.7,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                          Text(
+                            'Version 0.9.5',
+                            style: TextStyle(fontSize: 12, letterSpacing: .4),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                child: const Text('Open-source licenses'),
               ),
               const SizedBox(height: 28),
               Center(
@@ -380,7 +412,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     onPressed: _busy
         ? null
         : () => _run(() async {
-            await widget.library.openLink(url);
+            await widget.library.openExternalLink(url);
             return null;
           }),
     icon: Icon(icon, color: color),

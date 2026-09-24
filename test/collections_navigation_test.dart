@@ -91,14 +91,18 @@ void main() {
     );
     await tester.tap(find.text('Choose'));
     await tester.pumpAndSettle();
-    expect(find.text('Already in this collection'), findsOneWidget);
+    expect(find.text('Tap to remove from this collection'), findsOneWidget);
     final already = tester.widget<ListTile>(
       find.widgetWithText(ListTile, 'Already shelved'),
     );
-    expect(already.enabled, isFalse);
+    expect(already.enabled, isTrue);
+    await tester.tap(find.text('Already shelved'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add this story'), findsNWidgets(2));
+    expect(library.membership, isNot(contains('one')));
     await tester.tap(find.text('New shelf'));
     await tester.pumpAndSettle();
-    expect(find.text('Already in this collection'), findsNWidgets(2));
+    expect(find.text('Tap to remove from this collection'), findsOneWidget);
     expect(library.membership, contains('two'));
   });
   testWidgets(

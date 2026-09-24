@@ -51,7 +51,11 @@ class OrganizedFake extends FakeLibrary {
       final f = request['feature'] as Map;
       switch (f['action']) {
         case 'membership':
-          membership.add(f['collection_id'] as String);
+          if (f['remove'] == true) {
+            membership.remove(f['collection_id'] as String);
+          } else {
+            membership.add(f['collection_id'] as String);
+          }
           return null;
         case 'collections':
           return collections;

@@ -66,6 +66,15 @@ class MainActivity : FlutterActivity() {
                             result.success(null) }
                         catch (_: Exception) { result.error("browser", "No browser is available to open this story", null) }
                     }
+                    "openExternalLink" -> {
+                        val uri = Uri.parse(call.arguments as? String ?: "")
+                        if (uri.scheme != "https" || uri.host.isNullOrBlank() || uri.userInfo != null) {
+                            result.error("url", "Unsupported link", null)
+                        } else try {
+                            startActivity(Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE))
+                            result.success(null)
+                        } catch (_: Exception) { result.error("browser", "No browser is available to open this link", null) }
+                    }
                     "websiteSessions" -> result.success(sessions?.status() ?: mapOf("ao3" to false, "ffn" to false))
                     "connectWebsite" -> {
                         val site = call.argument<String>("site")

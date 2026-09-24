@@ -708,20 +708,21 @@ Future<void> assignCollection(
                     row['contains'] == true
                         ? (row['collection']['kind'] == 'smart'
                               ? 'Included automatically'
-                              : 'Already in this collection')
+                              : 'Tap to remove from this collection')
                         : (row['collection']['kind'] == 'smart'
                               ? 'Does not match its rules'
                               : 'Add this story'),
                   ),
                   trailing: Icon(
                     row['contains'] == true
-                        ? Icons.check_circle_rounded
+                        ? (row['collection']['kind'] == 'smart'
+                              ? Icons.check_circle_rounded
+                              : Icons.remove_circle_outline_rounded)
                         : row['collection']['kind'] == 'smart'
                         ? Icons.auto_awesome_outlined
                         : Icons.add_rounded,
                   ),
                   enabled:
-                      row['contains'] != true &&
                       row['collection']['kind'] == 'manual' &&
                       row['saving'] != true,
                   onTap: () async {
@@ -731,11 +732,11 @@ Future<void> assignCollection(
                         'action': 'membership',
                         'collection_id': row['collection']['id'],
                         'ids': [id],
-                        'remove': false,
+                        'remove': row['contains'] == true,
                       });
                       if (ctx.mounted) {
                         update(() {
-                          row['contains'] = true;
+                          row['contains'] = row['contains'] != true;
                           row['saving'] = false;
                         });
                       }
