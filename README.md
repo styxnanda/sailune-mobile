@@ -1,266 +1,203 @@
-# Sailune for Android
-
-A quiet reading room for your fanfiction bookmarks, built with **Flutter + Dart** and the **embedded Sailune-Go core**. Android is the focus of this repository; iOS will be a separate project.
-
-The interface follows Sailune Desktop: monochrome surfaces, rounded story cards, generous touch targets, chapter controls, and light/dark appearance. The original Sailune icon is shared across clients. Cards use small, color-only folded corners (Completed green, Reading blue, To read lavender, On hold amber, Dropped rose). Site watermarks use low-opacity black in light mode and pearl in dark mode, clipped at the lower-right corner.
-
-<p>
-<img src="test/goldens/library_light.png" width="280" alt="Sailune reading room in light appearance" />
-<img src="test/goldens/library_dark.png" width="280" alt="Sailune reading room in dark appearance" />
+<p align="center">
+  <img src="assets/sailune.png" width="112" height="112" alt="Sailune icon" />
+</p>
+<h1 align="center">sailune</h1>
+<p align="center">A quiet home for your fanfiction bookmarks, on Android.</p>
+<p align="center">
+  <a href="https://github.com/styxnanda/sailune-mobile/releases/latest">Download</a> ·
+  <a href="#getting-started">Getting started</a> ·
+  <a href="#contributing">Contributing</a> ·
+  <a href="LICENSE">GPL-3.0</a>
 </p>
 
-Screenshots contain synthetic test stories, not a preloaded collection.
+Sailune helps you keep track of the stories you love on **Archive of Our Own** and
+**FanFiction.net**. Save bookmarks, track your reading progress, organize collections,
+and keep your own notes and ratings in a library stored on your device.
 
-## Features
+Sailune is a bookmark manager: stories open in your browser, and you decide when
+to update your progress. It does not download full stories or synchronize your
+library through a cloud service.
 
-- Add AO3 and FanFiction.net stories with public metadata, or save offline. The full-width add button expands into a rising form sheet.
-- Scraping runs without popups. Inline progress offers Cancel and keeps a 15-second total deadline across HTTP and background WebView recovery. Cancelled or failed fetches retain the form.
-- Search, shelves, website filtering, unread-chapter filtering, and sorting.
-- Bounded SQL pages of 40 stories and lazy scrolling.
-- Edit titles, authors, progress, personal tags, notes, and ratings.
-- Refresh source details without replacing personal fields.
-- Read the next chapter using the shared core's URL resolver. Opening never marks a chapter read.
-- Confirm before deleting a bookmark.
-- Export and merge the CLI/desktop versioned JSON backup format using Android's document picker.
-- Device, light, and dark appearance; scalable text and 48dp controls.
+<p align="center">
+  <img src="test/goldens/library_light.png" width="280" alt="Sailune Library in light mode" />
+  <img src="test/goldens/library_dark.png" width="280" alt="Sailune Library in dark mode" />
+</p>
+<p align="center"><sub>Example library with fictional test data. Your library starts empty.</sub></p>
 
-The app starts with an empty library. Tests inject their own fixtures; the shipped app has no mock persistence or server dependency.
+## What you can do
 
-## Build
+- **Build your library.** Paste an AO3 or FFN link to fetch story details, or enter
+  the title and author yourself without fetching.
+- **Track your reading.** Keep a chapter number and reading status for each story.
+  Open the next chapter without automatically marking it as read.
+- **Make it personal.** Add tags, notes, ratings, covers, and background artwork.
+- **Organize collections.** Choose stories manually or create automatic collections
+  using tags and other matching rules. Swipe between Library and Collections.
+- **Find your next read.** Search, sort, and filter by shelf, website, or unread chapters.
+- **Choose your appearance.** Use light, dark, or device theme, with minimal,
+  portrait-cover, or background-artwork cards.
+- **Keep a backup.** Export stories, collections, and artwork in a ZIP, then import
+  it later. Legacy Sailune JSON backups can also be imported.
 
-Requirements: Flutter **3.47.4** / Dart **3.13**, Go **1.26.3**, JDK **17**, Android SDK platform **36**, build tools **36.0.0**, NDK **28.2.13676358**. Android 7.0/API 24 or newer, ARM64 phones and x86_64 emulators. The current SQLite dependency is supported here on those 64-bit ABIs.
+## Install
 
-Keep the shared core alongside this checkout:
+Download the Android APK from [GitHub Releases](https://github.com/styxnanda/sailune-mobile/releases/latest)
+and open it on your device. Android may ask you to allow installation from the
+browser or file manager you are using.
 
-```text
-Projects/
-  sailune-cli/        # github.com/styxnanda/sailune-go
-  sailune-mobile/    # this repository
-```
+Sailune supports **Android 7.0 or newer**, on **ARM64** devices and **x86_64**
+emulators. This repository contains the Android app, built with Flutter and the
+shared [Sailune-Go core](https://github.com/styxnanda/sailune-go).
 
-The `core/go.mod` replacement points at `../../sailune-cli`. CI pins core commit `84f0017bc00fc36d2666193d81b7d8a611331a18`. Use that revision for reproducible builds. Local core changes are picked up deliberately when you rebuild the bindings.
+Release APKs currently use development signing. If Android rejects an update
+because its signing key differs, export and verify a backup before uninstalling
+the existing app. Uninstalling removes its local library.
+
+## Getting started
+
+1. Tap **Add story** in Library and paste a supported story link.
+2. Leave **Fetch website details** enabled to fill details automatically, or turn
+   it off to enter a title and author yourself.
+3. Save the story, then open it to update your progress, notes, tags, or rating.
+4. Open **Collections** to create a manual collection or one based on matching rules.
+5. In **Settings**, choose your appearance and use **Save a backup** regularly.
+
+For website access, go to **Settings → Website sessions** and sign in to the site.
+Signing in improves fetching reliability; **FFN fetching requires a saved sign-in
+session**. Website restrictions or expired sessions can still prevent fetching.
+Manual entry remains available, and failed fetches keep your entered details.
+
+Tap a story's chapter count to open that chapter or copy its link. Swipe the
+folded corner of a story card to change its reading status. Long-press a card
+to remove the bookmark. The welcome tour can be replayed from Settings.
+
+## Your data
+
+Your library is stored in the app's private SQLite database on your device.
+There is no Sailune account or cloud synchronization. Reading and fetching story
+details contact the relevant website.
+
+Website sessions are stored separately from your bookmarks and are excluded from
+library backups. **Clear website sessions** signs you out without deleting stories.
+App sign-in and your browser's sign-in are separate.
+
+Android automatic backup is disabled. Keep an exported backup before clearing app
+data or uninstalling. Backup files include your notes and reading history, so
+store them somewhere you trust. Import merges into your library, preserving
+existing personal data and artwork while adding missing stories, artwork, and
+collection memberships.
+
+## Contributing
+
+Bug reports, usability feedback, documentation improvements, and code contributions
+are welcome. Use [Issues](https://github.com/styxnanda/sailune-mobile/issues) to
+report a problem or discuss a larger change before starting work.
+
+For a bug report, include your app version, Android version, steps to reproduce,
+and what you expected to happen. Screenshots or a minimal example help; remove
+personal notes, session information, and other private data before sharing them.
+
+For a code contribution:
+
+1. Fork the repository and create a branch for your change.
+2. Set up the app using the instructions below.
+3. Keep the change focused and add or update tests for affected behavior.
+4. Run the checks and open a pull request explaining the problem, the change,
+   and how you verified it. Include screenshots for visible UI changes.
+
+### Development setup
+
+Use the versions pinned in [CI](.github/workflows/android.yml):
+
+| Tool | Version |
+| --- | --- |
+| Flutter / Dart | 3.47.4 / 3.13 |
+| Go | 1.26.3 |
+| JDK | 17 |
+| Android SDK platform | 36 |
+| Android build tools | 36.0.0 |
+| Android NDK | 28.2.13676358 |
+
+Clone the shared core beside this repository. The directory name `sailune-cli`
+is required by the local replacement in [core/go.mod](core/go.mod).
 
 ```sh
-# Set JAVA_HOME and ANDROID_HOME to your installed JDK and SDK.
+git clone --branch v0.9.0 https://github.com/styxnanda/sailune-go.git sailune-cli
+git clone https://github.com/styxnanda/sailune-mobile.git sailune-mobile
+cd sailune-mobile
+```
+
+Set `JAVA_HOME` and `ANDROID_HOME` to your installed JDK and Android SDK, and
+make the SDK command-line tools and platform tools available on your `PATH`.
+Then build the Go bindings and launch the app on a connected device or emulator:
+
+```sh
 sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358'
 go install golang.org/x/mobile/cmd/gomobile@v0.0.0-20260908204917-8b95e45f8d3e
 go install golang.org/x/mobile/cmd/gobind@v0.0.0-20260908204917-8b95e45f8d3e
 scripts/build-core.sh
 flutter pub get
 flutter run
-# Installable development build:
-flutter build apk --debug --target-platform android-arm64,android-x64
 ```
 
-The APK is `build/app/outputs/flutter-apk/app-debug.apk`. The generated AAR is intentionally ignored by Git. Rebuild it after changes to the facade or Go core. Flutter generates its Gradle launcher and local configuration on first build.
+Rebuild the bindings after changing the Go core or mobile bridge. The generated
+`android/app/libs/sailune.aar` is intentionally excluded from Git.
 
-CI runs analysis, widget/golden tests, Go race tests and vet, builds the APK, and runs the real bridge integration test on an Android emulator. The APK is a development artifact; production signing and Play Store release are not configured.
-
-## Test
+To create an APK:
 
 ```sh
+scripts/build-release.sh
+```
+
+The APK and checksum are written to `build/releases/`.
+
+### Checks
+
+```sh
+dart format --output=none --set-exit-if-changed lib test integration_test test_driver
 flutter analyze
 flutter test
 go -C core test -race ./...
 go -C core vet ./...
-# Only on a disposable emulator; creates and deletes a synthetic bookmark:
-flutter test integration_test/library_test.dart -d emulator-5554
 ```
 
-Golden screenshots are generated with bundled Roboto and Material Icons on macOS. Review visual changes before running `flutter test --update-goldens`.
+Run the Android bridge integration test on a disposable emulator with the device
+ID `emulator-5554`; it creates and removes synthetic library data:
 
-See [verification notes](docs/verification.md) for results and remaining checks.
-
-## Architecture and storage
-
-```text
-Flutter screens → Dart Library interface → Android MethodChannel
-  → worker executor → gomobile AAR → Sailune-Go → private SQLite
+```sh
+bash scripts/test-android-integration.sh
 ```
 
-Dart owns presentation and form state. The Kotlin adapter owns app-private paths, browser intents, preferences, and the document picker. Go owns validation, canonical URLs, duplicate checks, metadata, persistence, queries, chapter resolution, and transfers. No CLI subprocess is launched and no domain rules are copied into Dart.
-
-SQLite and network work run off Android's UI thread. Search is debounced, outdated list responses are discarded, lists are paginated, and saves disable duplicate submission. Failed saves retain the form. Editing sends only changed personal fields.
-
-The library lives under Android's private app files directory. It is plaintext within the app sandbox; uninstalling removes it. Android automatic backup is disabled. Export a snapshot before uninstalling. JSON backups contain your personal notes and reading history, and can be read by anyone who has the file. Mobile file transfers are capped at 16 MiB. Import merges atomically and skips duplicate URLs; it does not synchronize edits to existing bookmarks.
-
-Visible website sign-in and authenticated fetching are available through Settings → Website sessions. Desktop-cookie import, full-story downloads, background update checks, and cloud sync are not implemented. Website restrictions, expired sessions, or browser-bound challenges can still prevent fetching; offline entry remains available.
-
-## References
-
-- [Flutter platform channels](https://docs.flutter.dev/platform-integration/platform-channels)
-- [Go mobile bindings](https://go.dev/wiki/Mobile)
-- [Flutter widget testing](https://docs.flutter.dev/cookbook/testing/widget/introduction)
-
-Licensed under [GPL-3.0](LICENSE). Bundled Roboto uses the license in `assets/fonts/Roboto_LICENSE.txt`; Flutter and Go dependencies retain their respective licenses.
-
-### Source recovery
-
-The pinned shared core retries transient network failures and HTTP 525 with
-bounded exponential backoff, up to four attempts. Android keeps its 15-second total deadline and cancellation button.
-Login gates and browser challenges remain explicit failures; failed refreshes
-preserve saved metadata. See the [measured reliability report](https://github.com/styxnanda/sailune-go/blob/84f0017bc00fc36d2666193d81b7d8a611331a18/docs/scraping-reliability.md).
-The live sample improved AO3 recovery but did not reach 90% across both sites
-because FFN continued to require browser challenges.
-
-### Experimental silent FFN browser prototype
-
-FFN HTTP fetches receive up to 5 seconds before browser recovery is considered
-for a challenge, missing metadata, or an HTTP deadline. Android uses an on-demand,
-unattached WebView for the remaining total 15-second budget. It runs JavaScript
-and keeps app-private cookies/DOM storage; it never opens an external browser,
-asks for verification, imports personal browser cookies, or solves interactive
-challenges. Permission requests and JavaScript prompts are denied. Only the
-story header is returned to Go, where origin, work identity, size and parsed
-metadata are validated. A blocked attempt preserves existing data and displays
-an inline error. Browser work is serialized and failures cool down for 60 seconds
-within the running client; user cancellation does not trigger cooldown.
-
-The WebView is destroyed on completion, cancellation, timeout, or Activity
-shutdown. It has images disabled and no native JavaScript bridge. This limits
-idle work but does not make browser rendering as cheap as HTTP. Emulators cannot
-establish real-device FFN compatibility.
-
-Native regression tests (with an emulator connected):
+For changes to the native Android implementation, also run its instrumentation tests
+with an emulator connected:
 
 ```sh
 cd android
 ./gradlew :app:connectedDebugAndroidTest
 ```
 
-The network-dependent `liveFFNSample` instrumentation test is skipped unless the
-runner receives `-e liveFFN true`. It reports results rather than asserting an
-unproven success target. This experimental integration is included in the pinned shared core. Further
-FFN reliability work is on hold; no higher success rate is promised.
+Visual tests use bundled fonts and macOS-generated reference images. When a UI
+change is intentional, regenerate the affected snapshots with
+`flutter test --update-goldens` and inspect them before committing.
 
-Local FFN test result: the direct Android WebView recovered 0/8 supplied stories
-on the API 35 emulator; each blocked attempt ended at about 15 seconds. The
-three deterministic native WebView tests passed, as did the Flutter/Go checks.
-This is a working experimental integration, not a demonstrated FFN reliability
-fix. Physical-device behavior remains unverified.
+### Where the code lives
 
-### Add-story motion
+| Location | Responsibility |
+| --- | --- |
+| `lib/screens/`, `lib/widgets/` | Flutter screens, controls, and presentation |
+| `lib/data/`, `lib/models/` | Dart library interface and story models |
+| `android/app/src/` | Android bridge, website sessions, and device integration |
+| `core/mobile/` | Go facade exposed through mobile bindings |
+| `test/`, `integration_test/` | Widget, visual, and Android bridge tests |
+| `scripts/` | Build and validation helpers |
 
-The high-contrast Add story button fades into the theme's canvas color while its
-background expands. The sheet then rises over the matching surface, and the
-expansion layer fades away. The form keeps its normal light/dark palette; reduced
-motion skips the transition. Light and dark visual tests cover expansion and rise.
+Flutter handles the interface, Kotlin connects it to Android, and Sailune-Go
+owns validation, metadata, database queries, and backup operations. Changes to
+shared story behavior generally belong in the
+[Sailune-Go repository](https://github.com/styxnanda/sailune-go).
 
-### Website sessions on Android
+## License
 
-Open Settings → Website sessions → Archive of Our Own or FanFiction.net. Confirm
-the consent sheet, then sign in on the official website. A Sailune-styled browser
-frame closes automatically after detecting signed-in account navigation and a
-stored cookie. Closing manually never reports success. “Sign-in saved” records
-the last successful check, not a guarantee against future expiry. Retry Add or
-Refresh after signing in. Expired sessions direct you back to Settings.
-
-FFN starts at its mobile login route, `https://m.fanfiction.net/m/login.php`.
-A login-page HTTP 404 or a rendered “404 / File Not Found” page triggers one
-retry of the desktop login route in desktop browser mode. It does not retry
-after a password form has been shown, repeat submissions, clear cookies, or
-treat errors as signed-in state. Direct live probes may still be blocked by
-FFN; automated recovery tests use controlled pages.
-
-The visible FFN sign-in window accepts third-party cookies for embedded
-verification frames. AO3 and the hidden fetch browser keep third-party cookies
-disabled. A completed CAPTCHA or verification cookie is not proof of login;
-the account navigation check still has to succeed. This addresses a browser
-compatibility restriction, not a verified cure for FFN's live login failures.
-
-The check reads only navigation (AO3's header greeting/logout; FFN's
-account/logout links or its mobile profile and account/logout dropdown), never
-password fields or values. FFN's `/m/acct.php` dropdown structure was verified
-against a real signed-in account; automated fixtures use synthetic identities.
-Cookie presence,
-page load, and redirects alone do not count. Detection is conservative and may
-need updating if a website changes; unrecognized pages remain open with Close
-available. Checks are local, bounded to two minutes per page, and released on
-close. The scrape timeout does not limit sign-in time.
-
-Story reading uses the default browser's Custom Tabs UI where supported, falling
-back to opening the browser. Login retains app-owned WebView storage because
-Custom Tabs cannot expose browser cookies to the scraper. Browser and app
-sessions are separate; no session is transferred to a desktop CLI.
-
-Android CookieManager owns app-private cookie persistence and enforces cookie
-path/domain matching, including HttpOnly cookies. The native/Go transport reuses
-cookies for supported HTTPS sites and stores allowed Set-Cookie rotations.
-Cookies and passwords are never sent over the Flutter channel, written into the
-bookmark database, included in library exports, or logged. Password entry stays
-in the site's WebView; no JavaScript bridge is attached to the login page.
-Android automatic backups are disabled. This uses Android's WebView storage,
-not an additional custom Keystore-encrypted cookie export.
-
-Sign-in is restricted to the chosen website's HTTPS hosts, and TLS errors are
-never bypassed. External identity providers (such as Google sign-in) are not
-supported by this embedded flow. Website sessions cannot be changed while a
-library request is running, and fetching cannot start while sign-in is open.
-Clear website sessions removes all AO3/FFN cookies, website storage and WebView
-cache, without deleting bookmarks or already-saved metadata.
-
-Tests use synthetic sessions: authenticated metadata add, expiration/revocation,
-cookie rotation, cross-site redirect blocking, cookie-free backups, native cookie
-scope/persistence/clearing, and opening/closing the visible sign-in dialog. A real
-account login and restricted live work must still be verified by the account
-owner; no personal credentials are used by the automated tests.
-
-### First-launch tour
-
-A four-page, swipeable welcome tour points to Add story, Appearance, Website
-sessions, and library export/import. Focused screenshot cutouts show only the relevant controls and follow the active light/dark
-theme. Back/Next, Skip, reduced motion, and large text are supported. Finishing
-or skipping stores an Android preference; clearing app data resets it. Existing
-installations see the tour once after upgrading. Replay it in Settings at any
-time. The tour never opens a website or grants session consent.
-
-Regenerate the bundled screenshots from the actual Flutter screens with:
-`flutter test --update-goldens tool/onboarding_screenshots.dart`.
-Only synthetic/empty library data is used.
-
-### App presentation
-
-Confirmation sheets and transient notices share Sailune's surface, typography,
-and rounded controls. Startup uses a static centered icon and app name while
-preferences load, with no travel animation or artificial delay. Grouped settings
-cards clip their pressed highlights to the rounded outline.
-
-### Library card shortcuts
-
-Tap the chapter count to reveal Open and Copy link. These resolve the displayed
-chapter (chapter 0 resolves to chapter 1) without updating progress. Tap outside
-to collapse them. Long-press a card to confirm deletion.
-
-Swipe the folded status corner right/down to advance, or left/up to reverse:
-To read → Reading → Completed → On hold → Dropped. Only the fold twists;
-short/cancelled drags do not save. Failed writes keep the prior status. Screen
-readers can use the fold's increase/decrease actions, and reduced motion disables
-the twist. Active shelf filters are respected when status changes.
-
-
-## v0.9.0 — collections and artwork
-
-See [release and upgrade notes](docs/release-v0.9.0.md). Create manual collections
-or automatic tag-based collections through **Manage collections** in the library.
-Each story can have a portrait cover and a separate horizontal background.
-Settings provides portrait, background, and hidden library appearances plus an
-independent detail-artwork toggle. Default cards remain minimal.
-
-Complete ZIP backups include collections and images. Importing preserves existing
-personal data and images, fills missing artwork slots, and adds memberships.
-Legacy JSON backups remain importable. Back up before the schema-2 upgrade;
-older binaries cannot open the migrated library. Cloud sync is not included.
-
-## Android 0.9.5
-
-Collections now have a top-level tab, appearance-aware preview cards, and the
-same story browsing and filters as Library. Story detail artwork fills the
-viewport width. See [release notes](docs/release-v0.9.5.md). The shared Go core
-remains at v0.9.0; no database migration is needed for this interface update.
-
-## Android 1.0.0
-
-Swipe between Library and Collections, see locked existing memberships when adding
-stories, and use compact collection tag filters. FFN fetching requires a saved
-sign-in session; fetched additions disable manual title and author entry.
-Settings now centers the brand and version. See [release notes](docs/release-v1.0.0.md).
+Sailune is licensed under [GPL-3.0](LICENSE). Bundled Roboto fonts use the
+[Apache 2.0 license](assets/fonts/Roboto_LICENSE.txt). Other dependencies retain
+their respective licenses.
