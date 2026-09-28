@@ -31,6 +31,24 @@ class _EditorScreenState extends State<EditorScreen> {
   late int _rating;
   bool _fetch = true, _busy = false;
   String? _error;
+  bool _ffnSignedIn = false;
+  bool get _ffnBlocked {
+    final host = Uri.tryParse(_url.text.trim())?.host.toLowerCase() ?? '';
+    return (host == 'fanfiction.net' || host.endsWith('.fanfiction.net')) &&
+        !_ffnSignedIn;
+  }
+
+  bool get _fetchDetails => _fetch && !_ffnBlocked;
+
+  Future<void> _loadSessions() async {
+    try {
+      final sessions = await widget.library.websiteSessions();
+      if (mounted) setState(() => _ffnSignedIn = sessions['ffn'] == true);
+    } catch (_) {
+      // Keep FFN fetching disabled when session status is unavailable.
+    }
+  }
+
   late final ScrapeTask _scrape;
   @override
   void initState() {
@@ -45,7 +63,11 @@ class _EditorScreenState extends State<EditorScreen> {
     _notes = TextEditingController(text: s?.notes);
     _status = s?.status ?? 'planned';
     _rating = s?.rating ?? 0;
+    _url.addListener(_urlChanged);
+    _loadSessions();
   }
+
+  void _urlChanged() => setState(() {});
 
   @override
   void dispose() {
@@ -79,13 +101,15 @@ class _EditorScreenState extends State<EditorScreen> {
       if (widget.story == null) {
         final request = <String, dynamic>{
           'op': 'add',
-          'fetch': _fetch,
+          'fetch': _fetchDetails,
           'bookmark': {
             'url': _url.text.trim(),
-            for (final e in fields.entries) e.key.toLowerCase(): e.value,
+            for (final e in fields.entries)
+              if (!_fetchDetails || (e.key != 'Title' && e.key != 'Author'))
+                e.key.toLowerCase(): e.value,
           },
         };
-        if (_fetch) {
+        if (_fetchDetails) {
           await _scrape.run(request);
         } else {
           await widget.library.call(request);
@@ -179,8 +203,13 @@ class _EditorScreenState extends State<EditorScreen> {
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
                       title: const Text('Fetch website details'),
-                      value: _fetch,
-                      onChanged: _busy
+                      subtitle: _ffnBlocked
+                          ? const Text(
+                              'Sign in to FanFiction.net in Settings to fetch details.',
+                            )
+                          : null,
+                      value: _fetchDetails,
+                      onChanged: _busy || _ffnBlocked
                           ? null
                           : (v) => setState(() => _fetch = v),
                     ),
@@ -188,17 +217,17 @@ class _EditorScreenState extends State<EditorScreen> {
                   ],
                   TextFormField(
                     controller: _title,
-                    enabled: !_busy,
+                    enabled: !_busy && (widget.story != null || !_fetchDetails),
                     textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
                       labelText: 'Title',
-                      hintText: 'Optional when fetching details',
+                      hintText: 'Filled automatically when fetching details',
                     ),
                   ),
                   const SizedBox(height: 18),
                   TextFormField(
                     controller: _author,
-                    enabled: !_busy,
+                    enabled: !_busy && (widget.story != null || !_fetchDetails),
                     decoration: const InputDecoration(labelText: 'Author'),
                   ),
                   const SizedBox(height: 18),
@@ -296,7 +325,7 @@ class _EditorScreenState extends State<EditorScreen> {
                   const SizedBox(height: 28),
                   FilledButton(
                     onPressed: _busy ? null : _save,
-                    child: _busy && !(widget.story == null && _fetch)
+                    child: _busy && !(widget.story == null && _fetchDetails)
                         ? const SizedBox(
                             width: 22,
                             height: 22,

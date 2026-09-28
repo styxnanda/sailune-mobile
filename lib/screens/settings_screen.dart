@@ -312,31 +312,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 36),
               Semantics(
                 button: true,
-                label: 'Sailune version 0.9.5. Open-source licenses',
+                label: 'Sailune version 1.0.0. Open-source licenses',
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () => showLicensePage(
                     context: context,
                     applicationName: 'Sailune',
-                    applicationVersion: '0.9.5',
+                    applicationVersion: '1.0.0',
                     applicationLegalese: 'GPL-3.0 · Shared Sailune-Go core',
                   ),
-                  child: Row(
+                  child: Column(
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          'assets/sailune.png',
-                          width: 44,
-                          height: 44,
-                          excludeFromSemantics: true,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.asset(
+                              'assets/sailune.png',
+                              width: 44,
+                              height: 44,
+                              excludeFromSemantics: true,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          const Text(
                             'sailune',
                             style: TextStyle(
                               fontSize: 20,
@@ -344,12 +344,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               letterSpacing: -.7,
                             ),
                           ),
-                          SizedBox(height: 2),
-                          Text(
-                            'Version 0.9.5',
-                            style: TextStyle(fontSize: 12, letterSpacing: .4),
-                          ),
                         ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '1.0.0',
+                        style: TextStyle(fontSize: 12, letterSpacing: .4),
                       ),
                     ],
                   ),

@@ -257,3 +257,10 @@ Collections now have a top-level tab, appearance-aware preview cards, and the
 same story browsing and filters as Library. Story detail artwork fills the
 viewport width. See [release notes](docs/release-v0.9.5.md). The shared Go core
 remains at v0.9.0; no database migration is needed for this interface update.
+
+## Android 1.0.0
+
+Swipe between Library and Collections, see locked existing memberships when adding
+stories, and use compact collection tag filters. FFN fetching requires a saved
+sign-in session; fetched additions disable manual title and author entry.
+Settings now centers the brand and version. See [release notes](docs/release-v1.0.0.md).

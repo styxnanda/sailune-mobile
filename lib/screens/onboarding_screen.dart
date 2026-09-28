@@ -16,7 +16,7 @@ const _pages = [
   (
     image: 'sessions',
     title: 'Sign in',
-    caption: 'In Settings, open Website sessions and choose a site.',
+    caption: 'In Settings, open Website sessions and choose a site. Scraping is more reliable when signed in. FanFiction.net requires sign-in to fetch details.',
   ),
   (
     image: 'backup',

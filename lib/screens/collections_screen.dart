@@ -247,6 +247,7 @@ class _CollectionEditorState extends State<CollectionEditor> {
   int _offset = 0, _total = 0;
   List<Story> _rows = [];
   final _chosen = <int>{};
+  Set<int> _existing = {};
   List<String> _personalTags = [], _sourceTags = [], _fandoms = [];
   @override
   void initState() {
@@ -353,11 +354,25 @@ class _CollectionEditorState extends State<CollectionEditor> {
       if (_members && _id != null) 'Collection': _id else 'Rules': _rules,
     };
     final rows = await listStories(widget.library, f);
+    final existing = <int>{};
+    if (_id != null && !_members) {
+      for (var offset = 0; ; offset += 200) {
+        final members = await listStories(widget.library, {
+          'Collection': _id,
+          'Limit': 200,
+          'Offset': offset,
+        });
+        existing.addAll(members.map((s) => s.id));
+        if (members.length < 200) break;
+      }
+    }
     final total =
         await organize(widget.library, {'action': 'count', 'filter': f}) as int;
     if (mounted) {
       setState(() {
         _rows = rows;
+        _existing = existing;
+        _chosen.removeAll(existing);
         _total = total;
       });
     }
@@ -431,6 +446,9 @@ class _CollectionEditorState extends State<CollectionEditor> {
             ExpansionTile(
               initiallyExpanded: _kind == 'smart',
               tilePadding: EdgeInsets.zero,
+              shape: const Border(),
+              collapsedShape: const Border(),
+              childrenPadding: const EdgeInsets.only(bottom: 16),
               title: Text(
                 _kind == 'smart' ? 'Matching rules' : 'Find stories by tags',
               ),
@@ -441,7 +459,7 @@ class _CollectionEditorState extends State<CollectionEditor> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: _personal,
-                  minLines: 2,
+                  minLines: 1,
                   maxLines: 5,
                   decoration: const InputDecoration(
                     labelText: 'Personal tags · one per line',
@@ -463,7 +481,7 @@ class _CollectionEditorState extends State<CollectionEditor> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: _source,
-                  minLines: 2,
+                  minLines: 1,
                   maxLines: 5,
                   decoration: const InputDecoration(
                     labelText: 'Website tags · one per line',
@@ -574,8 +592,13 @@ class _CollectionEditorState extends State<CollectionEditor> {
                 contentPadding: EdgeInsets.zero,
                 title: Text(s.title),
                 subtitle: Text(s.author),
-                value: _chosen.contains(s.id),
-                onChanged: _kind == 'smart' || _busy
+                value:
+                    _chosen.contains(s.id) ||
+                    (!_members && _existing.contains(s.id)),
+                onChanged:
+                    _kind == 'smart' ||
+                        _busy ||
+                        (!_members && _existing.contains(s.id))
                     ? null
                     : (v) => setState(() {
                         if (v == true) {
@@ -618,7 +641,13 @@ class _CollectionEditorState extends State<CollectionEditor> {
                 onPressed: _busy || _rows.isEmpty
                     ? null
                     : () => setState(
-                        () => _chosen.addAll(_rows.map((s) => s.id)),
+                        () => _chosen.addAll(
+                          _rows
+                              .map((s) => s.id)
+                              .where(
+                                (id) => _members || !_existing.contains(id),
+                              ),
+                        ),
                       ),
                 child: const Text('Select page'),
               ),

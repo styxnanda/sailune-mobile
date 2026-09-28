@@ -23,6 +23,8 @@ class _StoryScreenState extends State<StoryScreen> {
   late Story _story;
   bool _busy = false, _detailArt = true;
   int _artRevision = 0;
+  bool _ffnSignedIn = false;
+  bool get _fetchBlocked => _story.json['site'] == 'ffn' && !_ffnSignedIn;
   String? _error;
   late final ScrapeTask _scrape;
   @override
@@ -31,6 +33,14 @@ class _StoryScreenState extends State<StoryScreen> {
     _scrape = ScrapeTask(widget.library);
     _story = widget.initial;
     _loadArtworkPreference();
+    _loadSessions();
+  }
+
+  Future<void> _loadSessions() async {
+    try {
+      final sessions = await widget.library.websiteSessions();
+      if (mounted) setState(() => _ffnSignedIn = sessions['ffn'] == true);
+    } catch (_) {}
   }
 
   Future<void> _loadArtworkPreference() async {
@@ -374,7 +384,13 @@ class _StoryScreenState extends State<StoryScreen> {
                       contentPadding: EdgeInsets.zero,
                       leading: const Icon(Icons.refresh_rounded),
                       title: const Text('Refresh website details'),
-                      onTap: _busy
+                      enabled: !_busy && !_fetchBlocked,
+                      subtitle: _fetchBlocked
+                          ? const Text(
+                              'Sign in to FanFiction.net in Settings to fetch details.',
+                            )
+                          : null,
+                      onTap: _busy || _fetchBlocked
                           ? null
                           : () => _run(
                               () => _update({'op': 'refresh', 'id': _story.id}),

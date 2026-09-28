@@ -1,7 +1,7 @@
 name: sailune_mobile
 description: A quiet home for your stories. Sailune for Android.
 publish_to: none
-version: 0.9.5+14
+version: 1.0.0+15
 environment:
   sdk: ^3.13.0
 dependencies:

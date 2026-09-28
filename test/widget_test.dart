@@ -188,7 +188,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    final library = _PendingAddLibrary();
+    final library = _PendingAddLibrary()..sessions['ffn'] = true;
     await tester.pumpWidget(SailuneApp(library: library));
     await tester.runAsync(
       () => precacheImage(

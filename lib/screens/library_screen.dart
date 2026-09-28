@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/gestures.dart';
 
 import '../data/library.dart';
 import '../widgets/app_feedback.dart';
@@ -329,8 +330,36 @@ class _LibraryScreenState extends State<LibraryScreen>
     }
   }
 
+  double _swipeDistance = 0;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.translucent,
+    dragStartBehavior: DragStartBehavior.down,
+    onPanStart: widget.collection != null ? null : (_) => _swipeDistance = 0,
+    onPanUpdate: widget.collection != null
+        ? null
+        : (details) => _swipeDistance += details.delta.dx,
+    onPanEnd: widget.collection != null
+        ? null
+        : (details) {
+            final velocity = details.velocity.pixelsPerSecond.dx;
+            final direction = Directionality.of(context) == TextDirection.rtl
+                ? -1
+                : 1;
+            final distance = _swipeDistance * direction;
+            final speed = velocity * direction;
+            if (!_showCollections && (distance < -60 || speed < -400)) {
+              setState(() => _showCollections = true);
+            } else if (_showCollections && (distance > 60 || speed > 400)) {
+              setState(() => _showCollections = false);
+              _load();
+            }
+          },
+    child: _buildScreen(context),
+  );
+
+  Widget _buildScreen(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final refined = _site.isNotEmpty || _sort != 'added' || _unread;
     if (_showCollections && widget.collection == null) {
